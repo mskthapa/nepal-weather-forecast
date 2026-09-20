@@ -1,7 +1,9 @@
 // Global active coordinates (defaults to Butwal)
 let currentLat = '27.7000';
 let currentLon = '83.4500';
-
+const API_BASE = 'https://nepal-weather-forecast-backend.onrender.com';
+// Example fetch:
+// fetch(`${API_BASE}/api/precipitation-insight?lat=...`)
 
 // async function loadHourlyForecast() {
 //   try {
