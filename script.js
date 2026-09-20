@@ -79,7 +79,7 @@ async function loadHourlyForecast(lat, lon) {
     const targetLat = lat !== undefined ? lat : currentLat;
     const targetLon = lon !== undefined ? lon : currentLon;
 
-    const response = await fetch(`http://localhost:5000/api/hourly-forecast?lat=${targetLat}&lon=${targetLon}`);
+    const response = await fetch(`${API_BASE}/api/hourly-forecast?lat=${lat}&lon=${lon}`);
     const result = await response.json();
     
     console.log("Hourly API Result:", result);
@@ -144,7 +144,7 @@ async function loadHourlyForecast(lat, lon) {
 // 2. Fetch and render 7-day daily forecast
 async function loadDailyForecast() {
   try {
-    const response = await fetch(`http://localhost:5000/api/daily-forecast?lat=${currentLat}&lon=${currentLon}`);
+    const response = await fetch(`${API_BASE}/api/daily-forecast?lat=${lat}&lon=${lon}`);
     const result = await response.json();
     
     if (result.success) {
@@ -215,7 +215,7 @@ async function loadCurrentWeather(lat, lon) {
     const targetLat = lat !== undefined ? lat : currentLat;
     const targetLon = lon !== undefined ? lon : currentLon;
 
-    const response = await fetch(`http://localhost:5000/api/current-weather?lat=${targetLat}&lon=${targetLon}`);
+    const response = await fetch(`${API_BASE}/api/current-weather?lat=${lat}&lon=${lon}`);
     if (!response.ok) return;
 
     const result = await response.json();
@@ -309,7 +309,7 @@ async function loadPrecipitationInsight(lat, lon) {
 // 4. Fetch and render weather insights
 async function loadInsights() {
   try {
-    const response = await fetch(`http://localhost:5000/api/insights?lat=${currentLat}&lon=${currentLon}`);
+    const response = await fetch(`${API_BASE}/api/insights?lat=${lat}&lon=${lon}`);
     const result = await response.json();
 
     if (result.success) {
@@ -385,7 +385,7 @@ async function loadWeatherMetrics(lat, lon) {
     const targetLat = lat !== undefined ? lat : currentLat;
     const targetLon = lon !== undefined ? lon : currentLon;
 
-    const response = await fetch(`http://localhost:5000/api/weather-metrics?lat=${targetLat}&lon=${targetLon}`);
+    const response = await fetch(`${API_BASE}/api/weather-metrics?lat=${lat}&lon=${lon}`);
     const result = await response.json();
     
     if (result.success) {
@@ -680,8 +680,8 @@ async function loadPrecipitationInsight(lat, lon) {
 
     // 1. Fetch BOTH the insight text and the hourly rain data
     const [insightRes, rainRes] = await Promise.all([
-      fetch(`http://localhost:5000/api/precipitation-insight?lat=${targetLat}&lon=${targetLon}`),
-      fetch(`http://localhost:5000/api/hourly-rain?lat=${targetLat}&lon=${targetLon}`)
+      fetch(`${API_BASE}/api/precipitation-insight?lat=${lat}&lon=${lon}`),
+      fetch(`${API_BASE}/api/hourly-rain?lat=${lat}&lon=${lon}`)
     ]);
 
     const precipSection = document.getElementById('rainChartSection') || document.querySelector('.precipitation-section');
