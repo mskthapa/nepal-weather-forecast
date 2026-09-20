@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NWF | Weather Dashboard</title>
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-TLV3WB2S5P"></script>
+      <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+
+        gtag('config', 'G-TLV3WB2S5P');
+      </script>
+
+
+</head>
+<body>
+
+    <h1>Nepal Weather Forecast</h1>
+
+        <!-- Nepal Location Search Bar -->
+<div class="search-container">
+  <div class="search-wrapper-flex">
+    <div class="search-box">
+      <i class="fa-solid fa-magnifying-glass"></i>
+      <input type="text" id="locationSearchInput" placeholder="Search any place in Nepal (e.g., Kathmandu, Pokhara, Butwal)..." autocomplete="off" />
+    </div>
+    <button id="getLocationBtn" class="location-btn" title="Use my current location" onclick="requestUserLocation()">
+  <i class="fa-solid fa-location-crosshairs"></i>
+</button>
+  </div>
+  <div id="searchResultsDropdown" class="search-dropdown"></div>
+</div>
+
+<section class="current-weather-section">
+  <div class="location-header">
+    <h1 id="locationTitle">Butwal</h1>
+    <p id="locationSub">Lumbini Province, Nepal &bull; <span id="updateTime">As of --</span></p>
+  </div>
+
+  <div class="current-card">
+    <!-- Main Info Flex Container (Temp/Condition + Icon) -->
+    <div class="current-main-row">
+      <div class="current-main-text">
+        <div class="temp-display">
+          <span id="currentTemp">--</span>°C
+        </div>
+        <div class="condition-display">
+          <span id="currentCondition">Loading...</span>
+        </div>
+      </div>
+      <!-- Main Weather Icon goes here -->
+      <img id="currentWeatherIcon" src="" alt="Weather Icon" class="main-weather-icon" />
+    </div>
+
+    <div class="details-row">
+      <p>Feels Like: <span id="feelsLike">--</span>°C</p>
+      <p>Humidity: <span id="humidity">--</span>%</p>
+      <p>Chance of Rain: <span id="precipitation">--</span>%</p>
+      <p>UV Index: <span id="uvIndex">--</span></p>
+    </div>
+  </div>
+</section>
+<section class="outlook-section">
+  <h3>Today's Outlook</h3>
+  <div id="weatherInsight" class="insight-card">
+    <p>Loading outlook...</p>
+  </div>
+</section>
+
+    <!-- Rain Intensity Chart Section -->
+<section id="rainChartSection" class="rain-chart-section">
+  <h3>Precipitation Outlook</h3>
+  <p id="rainOutlookText" class="outlook-text">Rain likely for the next several hours. Locally heavy rainfall possible.</p>
+  
+  <!-- Added dynamic insight text container for the JSON statement -->
+  <!-- <p id="precipInsightText" class="insight-subtext"></p> -->
+
+  <div class="chart-legend-labels">
+    <span>Heavy</span>
+    <!-- <span>Light</span> -->
+  </div>
+  <div id="rainChart" class="rain-chart-container">
+    <p>Loading precipitation chart...</p>
+  </div>
+  <div class="chart-legend-labels">
+    <!-- <span>Heavy</span> -->
+    <span>Light</span>
+  </div>
+</section>
+
+    
+    <section class="forecast-section">
+      <div class="section-heading">
+        <div>
+          <span class="small-label">Next 24 hours</span>
+          <h2>Hourly forecast</h2>
+        </div>
+        <span class="heading-icon">🕒</span>
+      </div>
+
+      <div id="hourlyForecast" class="hourly-forecast">
+        <div class="loading-message">Loading hourly forecast...</div>
+      </div>
+    </section>
+
+        <section class="forecast-section">
+      <div class="section-heading">
+        <div>
+          <span class="small-label">Extended forecast</span>
+          <h2>7-day forecast</h2>
+        </div>
+        <span class="heading-icon">📅</span>
+      </div>
+
+      <div id="dailyForecast" class="daily-forecast">
+        <div class="loading-message">Loading 7-day forecast...</div>
+      </div>
+    </section>
+
+    <!-- Advanced Weather Metrics Grid -->
+<!-- Advanced Weather Metrics Grid with Icons -->
+<section class="metrics-grid">
+  
+  <div class="metric-card">
+    <h4><i class="fa-solid fa-temperature-half"></i> Temperature</h4>
+    <p><span id="metricTemp">--°</span> / <span id="metricMaxMin">--°</span></p>
+  </div>
+
+  <div class="metric-card">
+    <h4><i class="fa-solid fa-temperature-arrow-up"></i> Feels Like</h4>
+    <p id="metricFeelsLike">--°</p>
+  </div>
+
+  <div class="metric-card">
+    <h4><i class="fa-solid fa-wind"></i> Wind</h4>
+    <p><span id="metricWindSpeed">--</span> km/h <span id="metricWindDir">--</span></p>
+  </div>
+
+  <div class="metric-card">
+    <h4><i class="fa-solid fa-droplet"></i> Humidity</h4>
+    <p><span id="metricHumidity">--%</span></p>
+    <!-- <small id="metricHumidityDesc">--</small> -->
+  </div>
+
+  <div class="metric-card">
+    <h4><i class="fa-solid fa-sun"></i> UV Index</h4>
+    <p><span id="metricUvIndex">--</span></p>
+    <small id="metricUvDesc">--</small>
+  </div>
+
+  <div class="metric-card">
+    <h4><i class="fa-solid fa-smog"></i> Air Quality</h4>
+    <p id="metricAirQuality">--</p>
+    <small>Air Quality Index</small>
+  </div>
+
+  <div class="metric-card">
+    <h4><i class="fa-solid fa-water"></i> Dew Point</h4>
+    <p id="metricDewPoint">--°</p>
+  </div>
+
+  <div class="metric-card">
+    <h4><i class="fa-solid fa-gauge"></i> Pressure</h4>
+    <p id="metricPressure">-- mb</p>
+  </div>
+
+  <div class="metric-card">
+    <h4><i class="fa-solid fa-eye"></i> Visibility</h4>
+    <p id="metricVisibility">-- km</p>
+  </div>
+
+  <div class="metric-card">
+    <h4><i class="fa-solid fa-cloud-sun"></i> Sunrise & Sunset</h4>
+    <p class="metric-font">Sunrise: <span id="metricSunrise">--</span></p>
+    <p class="metric-font">Sunset: <span id="metricSunset">--</span></p>
+  </div>
+
+  <div class="metric-card">
+    <h4><i class="fa-solid fa-moon"></i> Moonrise & Moonset</h4>
+    <p class="metric-font">Moonrise: <span id="metricMoonrise">--</span></p>
+    <p class="metric-font">Moonset: <span id="metricMoonset">--</span></p>
+  </div>
+
+  <div class="metric-card">
+    <h4><i class="fa-solid fa-moon"></i> Moon Phase</h4>
+    <p id="metricMoonPhase">--</p>
+  </div>
+
+</section>
+
+<footer class="site-footer">
+  <p>
+    Designed and Developed by 
+    <a href="https://mskthapa.netlify.app/" target="_blank" rel="noopener noreferrer" class="portfolio-link">MSK THAPA</a> 
+    | Powered by Gemini
+  </p>
+</footer>
+
+
+
+    <!-- Link your script.js file here -->
+    <script src="script.js"></script>
+</body>
+</html>
