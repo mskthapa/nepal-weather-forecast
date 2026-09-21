@@ -440,7 +440,7 @@ if (searchInput) {
       } catch (err) {
         console.error('Search failed:', err);
       }
-    }, 300);
+    }, 600);
   });
 }
 

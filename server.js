@@ -300,6 +300,38 @@ app.get('/api/hourly-rain', async (req, res) => {
 });
 
 // 8. Nepal Location Search Route (OpenStreetMap Nominatim)
+// app.get('/api/search-locations', async (req, res) => {
+//   try {
+//     const query = req.query.q;
+//     if (!query) return res.json({ success: true, data: [] });
+
+//     const nominatimUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&countrycodes=np&accept-language=en&limit=10`;
+    
+//     const response = await axios.get(nominatimUrl, {
+//       headers: { 'User-Agent': 'WeatherApp-Nepal' }
+//     });
+
+//     const seenNames = new Set();
+//     const locations = [];
+
+//     for (const item of response.data) {
+//       if (!seenNames.has(item.display_name)) {
+//         seenNames.add(item.display_name);
+//         locations.push({
+//           name: item.display_name,
+//           lat: item.lat,
+//           lon: item.lon
+//         });
+//       }
+//       if (locations.length >= 5) break;
+//     }
+
+//     res.json({ success: true, data: locations });
+//   } catch (error) {
+//     res.status(500).json({ success: false, error: error.message });
+//   }
+// });
+
 app.get('/api/search-locations', async (req, res) => {
   try {
     const query = req.query.q;
@@ -308,7 +340,7 @@ app.get('/api/search-locations', async (req, res) => {
     const nominatimUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&countrycodes=np&accept-language=en&limit=10`;
     
     const response = await axios.get(nominatimUrl, {
-      headers: { 'User-Agent': 'WeatherApp-Nepal' }
+      headers: { 'User-Agent': 'NepalWeatherForecastApp/1.0 (contact@example.com)' }
     });
 
     const seenNames = new Set();
@@ -331,6 +363,7 @@ app.get('/api/search-locations', async (req, res) => {
     res.status(500).json({ success: false, error: error.message });
   }
 });
+
 
 const PORT = 5000;
 app.listen(PORT, () => console.log(`Proxy running on http://localhost:${PORT}`));
