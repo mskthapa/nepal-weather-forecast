@@ -1,7 +1,14 @@
 // Automatically switches between Localhost and Render
-const API_BASE = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+// const API_BASE = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+//   ? 'http://localhost:5000'
+//   : 'https://nepal-weather-forecast-backend.onrender.com/'; // Replace with your actual Render URL
+// 1. Detect if local or live
+const rawApiBase = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
   ? 'http://localhost:5000'
-  : 'https://nepal-weather-forecast-backend.onrender.com/'; // Replace with your actual Render URL
+  : 'https://nepal-weather-forecast-backend.onrender.com';
+
+// 2. Remove any extra slash at the end automatically
+const API_BASE = rawApiBase.replace(/\/+$/, '');
 
 // Global active coordinates (defaults to Butwal)
 let currentLat = '27.7000';
