@@ -433,7 +433,7 @@ async function loadRainChart(lat, lon) {
     const hasActualRain = result.data.some(item => {
       const chance = item.precipChance !== undefined ? item.precipChance : (item.pop !== undefined ? item.pop : 0);
       const qpf = item.qpf || 0;
-      return chance > 15 || qpf > 0;
+      return chance > 30 || qpf > 0;
     });
 
     if (!hasActualRain) {
