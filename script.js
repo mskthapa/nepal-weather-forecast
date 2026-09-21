@@ -154,70 +154,6 @@ async function loadCurrentWeather(lat, lon) {
   }
 }
 
-// async function loadPrecipitationInsight(lat, lon) {
-//   const precipSection = document.getElementById('rainChartSection') || document.querySelector('.precipitation-section');
-//   if (!precipSection) return;
-
-//   // Instantly hide while loading new location data so old rain doesn't linger
-//   precipSection.style.display = 'none';
-
-//   try {
-//     const targetLat = lat !== undefined ? lat : currentLat;
-//     const targetLon = lon !== undefined ? lon : currentLon;
-
-//     const [insightRes, rainRes] = await Promise.all([
-//       fetch(`${API_BASE}/api/precipitation-insight?lat=${targetLat}&lon=${targetLon}`),
-//       fetch(`${API_BASE}/api/hourly-rain?lat=${targetLat}&lon=${targetLon}`)
-//     ]);
-
-//     let hasActiveRain = false;
-//     let longText = "";
-
-//     if (rainRes.ok) {
-//       const rainJson = await rainRes.json();
-//       if (rainJson.success && Array.isArray(rainJson.data)) {
-//         hasActiveRain = rainJson.data.some(hour => (hour.qpf > 0 || hour.precipChance > 15));
-//       }
-//     }
-
-//     if (insightRes.ok) {
-//       const result = await insightRes.json();
-//       if (result.success && result.data) {
-//         const insightObj = Array.isArray(result.data) ? result.data[0] : result.data;
-//         if (insightObj?.insightTextLong) {
-//           longText = Array.isArray(insightObj.insightTextLong) ? insightObj.insightTextLong[0] : insightObj.insightTextLong;
-//         }
-//       }
-//     }
-
-//     const textLower = longText.toLowerCase();
-//     const isDryText = textLower.includes("no rain") || 
-//                       textLower.includes("no precipitation") || 
-//                       textLower.includes("dry") || 
-//                       textLower.includes("clear");
-
-//     if (isDryText) {
-//       hasActiveRain = false;
-//     }
-
-//     if (!hasActiveRain) {
-//       precipSection.style.display = 'none';
-//     } else {
-//       precipSection.style.display = 'block';
-//       const outlookEl = document.getElementById('rainOutlookText');
-//       // const insightEl = document.getElementById('precipInsightText');
-//       // if (outlookEl) outlookEl.innerText = longText;
-//       // if (insightEl) insightEl.innerText = longText;
-//       if (outlookEl && longText) {
-//         outlookEl.innerText = longText;
-//       }
-//     }
-//   } catch (error) {
-//     console.error('Failed to load precipitation insight:', error);
-//     precipSection.style.display = 'none';
-//   }
-// }
-
 async function loadPrecipitationInsight(lat, lon) {
   const precipSection = document.getElementById('rainChartSection') || document.querySelector('.precipitation-section');
   if (!precipSection) return;
@@ -240,10 +176,7 @@ async function loadPrecipitationInsight(lat, lon) {
     if (rainRes.ok) {
       const rainJson = await rainRes.json();
       if (rainJson.success && Array.isArray(rainJson.data)) {
-        hasActiveRain = rainJson.data.some(hour => {
-          const chance = hour.precipChance !== undefined ? hour.precipChance : (hour.pop !== undefined ? hour.pop : 0);
-          return (hour.qpf > 0 || chance > 15);
-        });
+        hasActiveRain = rainJson.data.some(hour => (hour.qpf > 0 || hour.precipChance > 15));
       }
     }
 
@@ -272,6 +205,9 @@ async function loadPrecipitationInsight(lat, lon) {
     } else {
       precipSection.style.display = 'block';
       const outlookEl = document.getElementById('rainOutlookText');
+      // const insightEl = document.getElementById('precipInsightText');
+      // if (outlookEl) outlookEl.innerText = longText;
+      // if (insightEl) insightEl.innerText = longText;
       if (outlookEl && longText) {
         outlookEl.innerText = longText;
       }
@@ -281,6 +217,70 @@ async function loadPrecipitationInsight(lat, lon) {
     precipSection.style.display = 'none';
   }
 }
+
+// async function loadPrecipitationInsight(lat, lon) {
+//   const precipSection = document.getElementById('rainChartSection') || document.querySelector('.precipitation-section');
+//   if (!precipSection) return;
+
+//   // Instantly hide while loading new location data so old rain doesn't linger
+//   precipSection.style.display = 'none';
+
+//   try {
+//     const targetLat = lat !== undefined ? lat : currentLat;
+//     const targetLon = lon !== undefined ? lon : currentLon;
+
+//     const [insightRes, rainRes] = await Promise.all([
+//       fetch(`${API_BASE}/api/precipitation-insight?lat=${targetLat}&lon=${targetLon}`),
+//       fetch(`${API_BASE}/api/hourly-rain?lat=${targetLat}&lon=${targetLon}`)
+//     ]);
+
+//     let hasActiveRain = false;
+//     let longText = "";
+
+//     if (rainRes.ok) {
+//       const rainJson = await rainRes.json();
+//       if (rainJson.success && Array.isArray(rainJson.data)) {
+//         hasActiveRain = rainJson.data.some(hour => {
+//           const chance = hour.precipChance !== undefined ? hour.precipChance : (hour.pop !== undefined ? hour.pop : 0);
+//           return (hour.qpf > 0 || chance > 15);
+//         });
+//       }
+//     }
+
+//     if (insightRes.ok) {
+//       const result = await insightRes.json();
+//       if (result.success && result.data) {
+//         const insightObj = Array.isArray(result.data) ? result.data[0] : result.data;
+//         if (insightObj?.insightTextLong) {
+//           longText = Array.isArray(insightObj.insightTextLong) ? insightObj.insightTextLong[0] : insightObj.insightTextLong;
+//         }
+//       }
+//     }
+
+//     const textLower = longText.toLowerCase();
+//     const isDryText = textLower.includes("no rain") || 
+//                       textLower.includes("no precipitation") || 
+//                       textLower.includes("dry") || 
+//                       textLower.includes("clear");
+
+//     if (isDryText) {
+//       hasActiveRain = false;
+//     }
+
+//     if (!hasActiveRain) {
+//       precipSection.style.display = 'none';
+//     } else {
+//       precipSection.style.display = 'block';
+//       const outlookEl = document.getElementById('rainOutlookText');
+//       if (outlookEl && longText) {
+//         outlookEl.innerText = longText;
+//       }
+//     }
+//   } catch (error) {
+//     console.error('Failed to load precipitation insight:', error);
+//     precipSection.style.display = 'none';
+//   }
+// }
 
 
 
