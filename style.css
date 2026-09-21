@@ -821,7 +821,7 @@ section {
 }
 
 /* Extra Small Phones (Below 380px, e.g., iPhone SE / older devices) */
-@media (max-width: 380px) {
+@media (max-width: 491px) {
 
 
   .current-card .temp-display {
