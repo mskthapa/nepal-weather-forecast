@@ -84,34 +84,6 @@ app.get('/api/hourly-weather', async (req, res) => {
 app.get('/api/daily-weather', handleDailyWeather);
 app.get('/api/daily-forecast', handleDailyWeather);
 
-// 3. Current Weather Observations Route
-// app.get('/api/current-weather', async (req, res) => {
-//   try {
-//     const lat = req.query.lat || '27.701';
-//     const lon = req.query.lon || '83.464';
-//     const url = `https://api.weather.com/v3/wx/observations/current?geocode=${lat},${lon}&units=m&language=en-US&format=json&apiKey=${KEY_CURRENT_WEATHER}`;
-//     const response = await axios.get(url);
-//     const raw = response.data;
-
-//     res.json({
-//       success: true,
-//       data: {
-//         temperature: raw.temperature ?? '--',
-//         feelsLike: raw.temperatureFeelsLike ?? '--',
-//         condition: raw.wxPhraseLong ?? 'N/A',
-//         humidity: raw.relativeHumidity ?? 0,
-//         precipChance: raw.precipChance ?? 0,
-//         uvIndex: raw.uvIndex ?? '--',
-//         time: raw.validTimeLocal ?? new Date().toISOString(),
-//         iconCode: raw.iconCode ?? 44
-//       }
-//     });
-//   } catch (error) {
-//     console.error('Current Weather API Error:', error.message);
-//     res.status(500).json({ success: false, error: error.message });
-//   }
-// });
-
 // 3. Current Weather Observations Route (Updated with Reverse Geocoding)
 app.get('/api/current-weather', async (req, res) => {
   try {
@@ -183,53 +155,111 @@ app.get('/api/insights', async (req, res) => {
   }
 });
 
-// 5. Weather Metrics Route
+// 5. Weather Metrics Route (Aggregating 4 Weather.com endpoints)
 app.get('/api/weather-metrics', async (req, res) => {
   try {
-    const lat = req.query.lat || '27.701';
-    const lon = req.query.lon || '83.464';
-    const url = `https://api.weather.com/v3/wx/forecast/hourly/2day?geocode=${lat},${lon}&units=m&language=en-US&format=json&apiKey=${KEY_METRICS}`;
-    const response = await axios.get(url);
-    const raw = response.data;
+    const lat = req.query.lat || '27.714';
+    const lon = req.query.lon || '85.311';
 
-    const parseFirst = (val, fallback) => {
-      if (Array.isArray(val)) return val[0] ?? fallback;
-      if (typeof val === 'string' && val.includes(',')) {
-        return val.split(',')[0].trim() || fallback;
+    // 1. Hourly Forecast (for general metrics: temp, humidity, wind, UV, etc.)
+    const hourlyUrl = `https://api.weather.com/v3/wx/forecast/hourly/2day?geocode=${lat},${lon}&units=m&language=en-US&format=json&apiKey=${KEY_METRICS}`;
+    
+    // 2. Daily 3-Day Forecast (Used for Moonrise, Moonset, and Moon Phase)
+    const dailyUrl = `https://api.weather.com/v3/wx/forecast/daily/3day?geocode=${lat},${lon}&units=m&language=en-US&format=json&apiKey=${KEY_METRICS}`;
+    
+    // 3. Historical 1-Day Conditions (Used for Sunrise and Sunset)
+    const historicalUrl = `https://api.weather.com/v3/wx/conditions/historical/hourly/1day?geocode=${lat},${lon}&units=m&language=en-US&format=json&apiKey=${KEY_METRICS}`;
+    
+    // 4. Global Air Quality 12-Hour Forecast (Used for Air Quality Index)
+    const aqiUrl = `https://api.weather.com/v3/wx/globalAirQuality/forecast/hourly/12hour?geocode=${lat},${lon}&language=en-US&scale=EPA&format=json&apiKey=${KEY_METRICS}`;
+
+    // Execute requests in parallel
+    const [hourlyRes, dailyRes, historicalRes, aqiRes] = await Promise.all([
+      axios.get(hourlyUrl).catch(() => ({ data: {} })),
+      axios.get(dailyUrl).catch(() => ({ data: {} })),
+      axios.get(historicalUrl).catch(() => ({ data: {} })),
+      axios.get(aqiUrl).catch(() => ({ data: {} }))
+    ]);
+
+    const raw = hourlyRes.data || {};
+    const daily = dailyRes.data || {};
+    const historical = historicalRes.data || {};
+    const aqiData = aqiRes.data || {};
+
+    // Helper to find the first valid non-empty item from response arrays
+    const parseFirst = (val) => {
+      if (Array.isArray(val)) {
+        const found = val.find(item => item !== null && item !== undefined && item !== '');
+        return found ?? null;
       }
-      return val ?? fallback;
+      return (val !== null && val !== undefined && val !== '') ? val : null;
     };
 
-    const currentTemp = parseFirst(raw.temperature, 24);
+    // Helper to format ISO timestamps (e.g., "2026-09-21T06:05:00+0545") to "6:05 AM"
+    const formatTimeStr = (isoString) => {
+      if (!isoString) return null;
+      try {
+        const dateObj = new Date(isoString);
+        if (!isNaN(dateObj.getTime())) {
+          return dateObj.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true });
+        }
+        return null;
+      } catch (e) {
+        return null;
+      }
+    };
+
+    // --- METRIC EXTRACTION --- //
+
+    // 1. Air Quality (from 12-hour globalAirQuality array)
+    const aqiArray = aqiData.globalairquality?.airQualityIndex || aqiData.airQualityIndex;
+    const liveAQI = parseFirst(aqiArray) ?? '75';
+
+    // 2. Moon Metrics (from Daily 3-Day Forecast)
+    const rawMoonrise = parseFirst(daily.moonriseTimeLocal);
+    const rawMoonset = parseFirst(daily.moonsetTimeLocal);
+    const rawMoonPhase = parseFirst(daily.moonPhase) || parseFirst(daily.moonPhaseCode);
+
+    // 3. Sunrise & Sunset (from Historical 1-Day Conditions, with Daily fallback)
+    const rawSunrise = parseFirst(historical.sunriseTimeLocal) || parseFirst(daily.sunriseTimeLocal);
+    const rawSunset = parseFirst(historical.sunsetTimeLocal) || parseFirst(daily.sunsetTimeLocal);
+
+    const currentTemp = parseFirst(raw.temperature) || 24;
 
     res.json({
       success: true,
       data: {
         temperature: currentTemp,
-        tempMax: parseFirst(raw.temperatureMax24Hour, parseFirst(raw.temperatureMax, currentTemp + 3)),
-        tempMin: parseFirst(raw.temperatureMin24Hour, parseFirst(raw.temperatureMin, currentTemp - 4)),
-        feelsLike: parseFirst(raw.temperatureFeelsLike, currentTemp),
-        windSpeed: parseFirst(raw.windSpeed, 0),
-        windDirText: parseFirst(raw.windDirectionText, 'N'),
-        humidity: parseFirst(raw.relativeHumidity, 0),
-        humidityDesc: parseFirst(raw.relativeHumidity, 0) > 70 ? 'Very High' : 'Normal',
-        uvIndex: parseFirst(raw.uvIndex, 0),
-        uvDescription: parseFirst(raw.uvDescription, 'Low'),
-        airQuality: '110',
-        dewPoint: parseFirst(raw.temperatureDewPoint, '--'),
-        pressure: parseFirst(raw.pressureMeanSeaLevel, '--'),
-        visibility: parseFirst(raw.visibility, '--'),
-        sunrise: '5:57 am',
-        sunset: '6:11 pm',
-        moonrise: '1:29 pm',
-        moonset: '11:41 pm',
-        moonPhase: 'First Quarter'
+        tempMax: parseFirst(raw.temperatureMax24Hour) || (currentTemp + 3),
+        tempMin: parseFirst(raw.temperatureMin24Hour) || (currentTemp - 4),
+        feelsLike: parseFirst(raw.temperatureFeelsLike) || currentTemp,
+        windSpeed: parseFirst(raw.windSpeed) || 0,
+        windDirText: parseFirst(raw.windDirectionText) || 'N',
+        humidity: parseFirst(raw.relativeHumidity) || 0,
+        uvIndex: parseFirst(raw.uvIndex) || 0,
+        uvDescription: parseFirst(raw.uvDescription) || 'Low',
+        dewPoint: parseFirst(raw.temperatureDewPoint) || '--',
+        pressure: parseFirst(raw.pressureMeanSeaLevel) || '--',
+        visibility: parseFirst(raw.visibility) || '--',
+        
+        // Output extracted fields
+        airQuality: liveAQI,
+        sunrise: formatTimeStr(rawSunrise) || '6:05 AM',
+        sunset: formatTimeStr(rawSunset) || '6:18 PM',
+        moonrise: formatTimeStr(rawMoonrise) || '2:15 PM',
+        moonset: formatTimeStr(rawMoonset) || '1:20 AM',
+        moonPhase: rawMoonPhase || 'Waxing Gibbous'
       }
     });
   } catch (error) {
+    console.error('Weather metrics error:', error.message);
     res.status(500).json({ success: false, error: error.message });
   }
 });
+
+const PORT = 5000;
+app.listen(PORT, () => console.log(`Proxy running on http://localhost:${PORT}`));
+
 
 // 6. Hourly Forecast Endpoint
 app.get('/api/hourly-forecast', async (req, res) => {
@@ -368,8 +398,6 @@ app.get('/api/search-locations', async (req, res) => {
   }
 });
 
-const PORT = 5000;
-app.listen(PORT, () => console.log(`Proxy running on http://localhost:${PORT}`));
 
 
 // Add this to your backend server file (e.g., server.js)
@@ -449,3 +477,4 @@ app.get('/api/precipitation-insight', async (req, res) => {
     res.json({ success: true, data: [] });
   }
 });
+

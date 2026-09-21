@@ -1,9 +1,13 @@
-// Define your live Render backend URL globally
-const API_BASE = 'https://nepal-weather-forecast-backend.onrender.com';
+// Automatically switches between Localhost and Render
+const API_BASE = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+  ? 'http://localhost:5000'
+  : 'https://your-app-name.onrender.com'; // Replace with your actual Render URL
 
 // Global active coordinates (defaults to Butwal)
 let currentLat = '27.7000';
 let currentLon = '83.4500';
+
+
 
 async function loadHourlyForecast(lat, lon) {
   try {
@@ -13,8 +17,6 @@ async function loadHourlyForecast(lat, lon) {
     const response = await fetch(`${API_BASE}/api/hourly-forecast?lat=${targetLat}&lon=${targetLon}`);
     const result = await response.json();
     
-    console.log("Hourly API Result:", result);
-
     if (result.success && result.data) {
       let hourlyArray = Array.isArray(result.data) ? result.data : (result.data.hourly || Object.values(result.data)[0]);
 
@@ -26,8 +28,16 @@ async function loadHourlyForecast(lat, lon) {
         const liveTemp = hourlyArray[0].temperature !== undefined ? hourlyArray[0].temperature : (hourlyArray[0].temp !== undefined ? hourlyArray[0].temp : null);
         const currentTempText = liveTemp !== null ? `${liveTemp}°C` : '33°C';
 
-        const mainIconEl = document.querySelector('#topWeatherIcon') || document.querySelector('.current-card img') || document.querySelector('.top-right-icon');
-        const currentIconSrc = mainIconEl ? mainIconEl.src : getWeatherIconPath(hourlyArray[0]?.iconCode || hourlyArray[0]?.wxIcon);
+        // 🔑 FIX: Look for the top section's icon image and reuse its exact source so they match!
+        const topIconImg = document.querySelector('.top-right-icon') || document.querySelector('#topWeatherIcon') || document.querySelector('.current-card img');
+        let currentIconSrc = topIconImg ? topIconImg.src : '';
+
+        // Fallback to hourly data if top icon isn't found yet
+        if (!currentIconSrc || currentIconSrc.includes('undefined')) {
+          const firstHour = hourlyArray[0];
+          const rawIconCode = firstHour.iconCode || firstHour.wxIcon || firstHour.icon || firstHour.weatherIcon;
+          currentIconSrc = getWeatherIconPath(rawIconCode);
+        }
         
         const nowCard = document.createElement('div');
         nowCard.className = 'hourly-card';
@@ -46,7 +56,7 @@ async function loadHourlyForecast(lat, lon) {
           if (index === 0) return; 
 
           const tempValue = hour.temperature !== undefined ? hour.temperature : (hour.temp !== undefined ? hour.temp : '--');
-          const iconCode = hour.iconCode || hour.wxIcon;
+          const iconCode = hour.iconCode || hour.wxIcon || hour.icon || hour.weatherIcon;
 
           const cardTime = new Date(baseTime.getTime() + ((index - 1) * 60 * 60 * 1000));
           const timeFormatted = cardTime.toLocaleTimeString([], { hour: 'numeric', hour12: true });
@@ -62,14 +72,13 @@ async function loadHourlyForecast(lat, lon) {
           `;
           container.appendChild(card);
         });
-      } else {
-        console.error("Could not resolve hourly data array:", result.data);
       }
     }
   } catch (error) {
     console.error('Failed to load hourly forecast:', error);
   }
 }
+
 
 // 2. Fetch and render 7-day daily forecast
 async function loadDailyForecast(lat, lon) {
@@ -105,120 +114,6 @@ async function loadDailyForecast(lat, lon) {
 }
 
 // 3. Fetch and render current weather
-// async function loadCurrentWeather(lat, lon) {
-//   try {
-//     const targetLat = lat !== undefined ? lat : currentLat;
-//     const targetLon = lon !== undefined ? lon : currentLon;
-
-//     const response = await fetch(`${API_BASE}/api/current-weather?lat=${targetLat}&lon=${targetLon}`);
-//     if (!response.ok) return;
-
-//     const result = await response.json();
-    
-//     if (result.success && result.data) {
-//       const data = result.data;
-      
-//       const setElText = (id, val) => {
-//         const el = document.getElementById(id);
-//         if (el) el.textContent = val;
-//       };
-
-//       const locationName = data.cityName || data.location || data.address || data.placeName;
-//       if (locationName) {
-//         const titleEl = document.getElementById('locationTitle');
-//         if (titleEl) titleEl.textContent = locationName;
-//       }
-
-//       const regionName = data.region || data.state || data.country || "";
-//       const subEl = document.getElementById('locationSub');
-//       const timeString = new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true });
-//       if (subEl) {
-//         const fullSubtext = regionName ? `${regionName} &bull; As of ` : `As of `;
-//         subEl.innerHTML = `${fullSubtext}<span id="updateTime">${timeString}</span>`;
-//       }
-
-//       setElText('currentTemp', data.temperature);
-//       setElText('currentCondition', data.condition);
-//       setElText('feelsLike', data.feelsLike);
-//       setElText('precipitation', data.precipChance);
-//       setElText('humidity', data.humidity);
-//       setElText('uvIndex', data.uvIndex);
-      
-//       const iconImgEl = document.getElementById('currentWeatherIcon');
-//       if (iconImgEl) {
-//         iconImgEl.src = getWeatherIconPath(data.iconCode);
-//       }
-//     }
-//   } catch (error) {
-//     console.error('Failed to load current weather:', error);
-//   }
-// }
-
-// async function loadPrecipitationInsight(lat, lon) {
-//   const precipSection = document.getElementById('rainChartSection') || document.querySelector('.precipitation-section');
-//   if (!precipSection) return;
-
-//   // Instantly hide while loading new location data so old rain doesn't linger
-//   precipSection.style.display = 'none';
-
-//   try {
-//     const targetLat = lat !== undefined ? lat : currentLat;
-//     const targetLon = lon !== undefined ? lon : currentLon;
-
-//     const [insightRes, rainRes] = await Promise.all([
-//       fetch(`${API_BASE}/api/precipitation-insight?lat=${targetLat}&lon=${targetLon}`),
-//       fetch(`${API_BASE}/api/hourly-rain?lat=${targetLat}&lon=${targetLon}`)
-//     ]);
-
-//     let hasActiveRain = false;
-//     let longText = "";
-
-//     if (rainRes.ok) {
-//       const rainJson = await rainRes.json();
-//       if (rainJson.success && Array.isArray(rainJson.data)) {
-//         hasActiveRain = rainJson.data.some(hour => {
-//           const chance = hour.precipChance !== undefined ? hour.precipChance : (hour.pop !== undefined ? hour.pop : 0);
-//           return (hour.qpf > 0 || chance >= 40);
-//         });
-//       }
-//     }
-
-//     if (insightRes.ok) {
-//       const result = await insightRes.json();
-//       if (result.success && result.data) {
-//         const insightObj = Array.isArray(result.data) ? result.data[0] : result.data;
-//         if (insightObj?.insightTextLong) {
-//           longText = Array.isArray(insightObj.insightTextLong) ? insightObj.insightTextLong[0] : insightObj.insightTextLong;
-//         }
-//       }
-//     }
-
-    
-
-//     const textLower = longText.toLowerCase();
-//     const isDryText = textLower.includes("no rain") || 
-//                       textLower.includes("no precipitation") || 
-//                       textLower.includes("dry") || 
-//                       textLower.includes("clear");
-
-//     if (isDryText) {
-//       hasActiveRain = false;
-//     }
-
-//     if (!hasActiveRain) {
-//       precipSection.style.display = 'none';
-//     } else {
-//       precipSection.style.display = 'block';
-//       const outlookEl = document.getElementById('rainOutlookText');
-//       if (outlookEl && longText) {
-//         outlookEl.innerText = longText;
-//       }
-//     }
-//   } catch (error) {
-//     console.error('Failed to load precipitation insight:', error);
-//     precipSection.style.display = 'none';
-//   }
-// }
 
 async function loadPrecipitationInsight(lat, lon) {
   const precipSection = document.getElementById('rainChartSection') || document.querySelector('.precipitation-section');
@@ -398,25 +293,40 @@ function getWeatherIconPath(iconCode) {
 }
 
 // 5. Fetch and render extended metrics
+
 async function loadWeatherMetrics(lat, lon) {
   try {
-    const targetLat = lat !== undefined ? lat : currentLat;
-    const targetLon = lon !== undefined ? lon : currentLon;
+    const targetLat = lat ?? (typeof currentLat !== 'undefined' ? currentLat : '27.714');
+    const targetLon = lon ?? (typeof currentLon !== 'undefined' ? currentLon : '85.311');
+
+    console.log(`[Metrics] Fetching from: ${API_BASE}/api/weather-metrics?lat=${targetLat}&lon=${targetLon}`);
 
     const response = await fetch(`${API_BASE}/api/weather-metrics?lat=${targetLat}&lon=${targetLon}`);
-    const result = await response.json();
     
-    if (result.success) {
+    if (!response.ok) {
+      console.error(`[Metrics Error] HTTP status: ${response.status}`);
+      return;
+    }
+
+    const result = await response.json();
+    console.log("[Metrics Success] Received data from backend:", result);
+
+    if (result.success && result.data) {
       const d = result.data;
+
       const setText = (id, text) => {
         const el = document.getElementById(id);
-        if (el) el.textContent = text;
+        if (el) {
+          el.textContent = (text !== null && text !== undefined && text !== '') ? text : '--';
+        } else {
+          console.warn(`[UI Warning] HTML element with id="${id}" not found in DOM.`);
+        }
       };
 
       setText('metricTemp', `${d.temperature}°`);
-      setText('metricMaxMin', `${d.tempMax}°`);
+      setText('metricMaxMin', `${d.tempMin}° / ${d.tempMax}°`);
       setText('metricFeelsLike', `${d.feelsLike}°`);
-      setText('metricWindSpeed', d.windSpeed);
+      setText('metricWindSpeed', `${d.windSpeed} km/h`);
       setText('metricWindDir', d.windDirText);
       setText('metricHumidity', `${d.humidity}%`);
       setText('metricUvIndex', d.uvIndex);
@@ -425,6 +335,7 @@ async function loadWeatherMetrics(lat, lon) {
       setText('metricDewPoint', `${d.dewPoint}°`);
       setText('metricPressure', `${d.pressure} mb`);
       setText('metricVisibility', `${d.visibility} km`);
+
       setText('metricSunrise', d.sunrise);
       setText('metricSunset', d.sunset);
       setText('metricMoonrise', d.moonrise);
@@ -432,9 +343,14 @@ async function loadWeatherMetrics(lat, lon) {
       setText('metricMoonPhase', d.moonPhase);
     }
   } catch (error) {
-    console.error('Failed to load weather metrics:', error);
+    console.error('[Metrics Error] Failed to load weather metrics:', error);
   }
 }
+
+// Call automatically when the script loads to populate initial UI
+document.addEventListener('DOMContentLoaded', () => {
+  loadWeatherMetrics();
+});
 
 // 6. Fetch and render rain chart
 
@@ -501,39 +417,6 @@ async function loadRainChart(lat, lon) {
 }
 
 // Master function to refresh everything when a location is picked
-// function updateWeatherLocation(lat, lon, locationName) {
-//   currentLat = lat;
-//   currentLon = lon;
-  
-//   const commaIndex = locationName.indexOf(',');
-//   let primaryName = locationName;
-//   let remainingLocation = '';
-
-//   if (commaIndex !== -1) {
-//     primaryName = locationName.substring(0, commaIndex).trim();      
-//     remainingLocation = locationName.substring(commaIndex + 1).trim(); 
-//   }
-
-//   const titleEl = document.getElementById('locationTitle');
-//   if (titleEl) {
-//     titleEl.textContent = primaryName;
-//   }
-  
-//   const subEl = document.getElementById('locationSub');
-//   const timeString = new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true });
-  
-//   if (subEl) {
-//     subEl.innerHTML = `${remainingLocation} &bull; As of <span id="updateTime">${timeString}</span>`;
-//   }
-  
-//   loadCurrentWeather(lat, lon);
-//   loadHourlyForecast(lat, lon);
-//   loadDailyForecast(lat, lon);
-//   loadWeatherMetrics(lat, lon);
-//   loadRainChart(lat, lon);
-//   loadInsights(lat, lon);
-//   loadPrecipitationInsight(lat, lon);
-// }
 
 function updateWeatherLocation(lat, lon, locationName) {
   // --- SAVE TO LOCALSTORAGE ---
@@ -574,17 +457,6 @@ function updateWeatherLocation(lat, lon, locationName) {
   loadInsights(lat, lon);
   loadPrecipitationInsight(lat, lon);
 }
-
-// Initial page load listener
-// window.addEventListener('DOMContentLoaded', () => {
-//   loadCurrentWeather(currentLat, currentLon);
-//   loadHourlyForecast(currentLat, currentLon);
-//   loadDailyForecast(currentLat, currentLon);
-//   loadWeatherMetrics(currentLat, currentLon);
-//   loadRainChart(currentLat, currentLon);
-//   loadInsights(currentLat, currentLon);
-//   loadPrecipitationInsight(currentLat, currentLon);
-// });
 
 // Initial page load listener with LocalStorage check
 window.addEventListener('DOMContentLoaded', () => {

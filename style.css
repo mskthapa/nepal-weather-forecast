@@ -105,65 +105,6 @@ section {
   object-fit: contain;
 }
 
-/* .search-container {
-  position: relative;
-  max-width: 500px;
-  margin: 0 auto 20px auto;
-}
-
-.search-box {
-  display: flex;
-  align-items: center;
-  background: #ffffff;
-  border: 1px solid #d1d5db;
-  border-radius: 12px;
-  padding: 10px 16px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
-  gap: 10px;
-}
-
-.search-box i {
-  color: #9ca3af;
-}
-
-.search-box input {
-  border: none;
-  outline: none;
-  width: 100%;
-  font-size: 14px;
-  color: #1f2937;
-  background: transparent;
-}
-
-.search-dropdown {
-  position: absolute;
-  top: 100%;
-  left: 0;
-  right: 0;
-  background: #ffffff;
-  border: 1px solid #e5e7eb;
-  border-radius: 12px;
-  margin-top: 6px;
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-  z-index: 1000;
-  display: none;
-  max-height: 250px;
-  overflow-y: auto;
-}
-
-.search-item {
-  padding: 12px 16px;
-  font-size: 13px;
-  color: #374151;
-  cursor: pointer;
-  border-bottom: 1px solid #f3f4f6;
-}
-
-.search-item:hover {
-  background: #f9fafb;
-  color: #2563eb;
-} */
-
 /* --- Search & Location Button Layout --- */
 .search-container {
   position: relative;
@@ -480,114 +421,6 @@ section {
   margin: 4px 0;
 }
 
-/* Update your forecast container class */
-/* .extended-forecast-container {
-  display: flex;
-  flex-wrap: nowrap;
-  overflow-x: auto;
-  scroll-behavior: smooth;
-  gap: 12px;
-  padding-bottom: 10px;
-} */
-
-/* Ensure individual cards don't shrink */
-/* .extended-forecast-container > div, 
-.extended-forecast-container > article {
-  flex: 0 0 auto;
-  min-width: 110px; 
-} */
-
-/* Optional: Smooth custom scrollbar styling */
-/* .extended-forecast-container::-webkit-scrollbar {
-  height: 6px;
-}
-.extended-forecast-container::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.2);
-  border-radius: 3px;
-} */
-
-/* Ensure the forecast container handles smooth scrolling */
-/* .extended-forecast-container {
-  display: flex;
-  flex-wrap: nowrap;
-  overflow-x: auto;
-  scroll-behavior: smooth;
-  gap: 12px;
-  padding-bottom: 10px;
-} */
-
-/* Force every day card to have an equal, fixed width and height */
-/* .extended-forecast-container .forecast-card,
-.extended-forecast-container > div {
-  flex: 0 0 120px; Adjust width (e.g., 120px) to your preferred box size  */
-  /* width: 120px;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  box-sizing: border-box;
-} */
-
-/* --- Equal Size Extended Forecast Cards --- */
-
-/* --- Strict Equal-Size Extended Forecast Cards --- */
-/* .extended-forecast-container {
-  display: flex;
-  flex-wrap: nowrap;
-  overflow-x: auto;
-  scroll-behavior: smooth;
-  gap: 12px;
-  padding-bottom: 10px;
-  width: 100%;
-} */
-
-/* Force absolute uniform dimensions */
-/* .extended-forecast-container .forecast-card,
-.extended-forecast-container .daily-card,
-.extended-forecast-container > div,
-.extended-forecast-container > article {
-  flex: 0 0 135px !important;
-  width: 135px !important;
-  min-width: 135px !important;
-  max-width: 135px !important;
-  height: 220px !important; 
-  min-height: 220px !important;
-  max-height: 220px !important;
-  
-  display: flex !important;
-  flex-direction: column !important;
-  justify-content: space-between !important;
-  align-items: center !important;
-  text-align: center !important;
-  box-sizing: border-box !important;
-  padding: 16px 10px !important;
-  overflow: hidden !important; 
-} */
-
-/* Control text containers so they never stretch the box */
-/* .extended-forecast-container .forecast-card h4,
-.extended-forecast-container .daily-card h4 {
-  font-size: 13px !important;
-  margin: 0 !important;
-  white-space: nowrap;
-} */
-
-/* .extended-forecast-container .forecast-card img,
-.extended-forecast-container .daily-card img {
-  width: 40px !important;
-  height: 40px !important;
-  object-fit: contain;
-  margin: auto 0; 
-} */
-
-/* .extended-forecast-container .forecast-card p,
-.extended-forecast-container .daily-card p {
-  font-size: 11px !important;
-  line-height: 1.3 !important;
-  margin: 0 !important;
-  width: 100% !important;
-  word-break: break-word;
-} */
 /* --- Advanced Weather Metrics Grid --- */
 .metrics-grid {
   display: grid;
@@ -690,16 +523,6 @@ section {
     padding: 24px;
   }
 
-  /* .extended-forecast-container .forecast-card,
-  .extended-forecast-container .daily-card,
-  .extended-forecast-container > div,
-  .extended-forecast-container > article {
-    flex: 0 0 145px !important;
-    width: 145px !important;
-    min-width: 145px !important;
-    height: 225px !important;
-  } */
-
       .daily-card {
     min-width: 15%;
     padding: 10px 6px;
@@ -717,22 +540,6 @@ section {
 
 /* --- Mobile Responsiveness (Devices below 768px) --- */
 @media (max-width: 767px) {
-  /* body, .app-container {
-    padding-left: 20px;
-    padding-right: 20px;
-    box-sizing: border-box;
-  }
-
-  body > h1 {
-    font-size: 20px;
-    margin-bottom: 16px;
-  }
-
-  section {
-    padding: 14px;
-    border-radius: 16px;
-    margin-bottom: 14px;
-  } */
 
     body {
     max-width: 900px;
