@@ -2,6 +2,9 @@
 let currentLat = '27.7000';
 let currentLon = '83.4500';
 const API_BASE = 'https://nepal-weather-forecast-backend.onrender.com';
+
+let lat = 27.7172; // Default Kathmandu latitude
+let lon = 85.3240; // Default Kathmandu longitude
 // Example fetch:
 // fetch(`${API_BASE}/api/precipitation-insight?lat=...`)
 
@@ -421,7 +424,7 @@ async function loadWeatherMetrics(lat, lon) {
 // 6. Fetch and render rain chart
 async function loadRainChart() {
   try {
-    const response = await fetch(`http://localhost:5000/api/hourly-rain?lat=${currentLat}&lon=${currentLon}`);
+    const response = await fetch(`${API_BASE}/api/hourly-rain?lat=${lat}&lon=${lon}`);
     const result = await response.json();
 
     const sectionEl = document.getElementById('rainChartSection');
