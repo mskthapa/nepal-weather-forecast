@@ -205,9 +205,12 @@ async function loadPrecipitationInsight(lat, lon) {
     } else {
       precipSection.style.display = 'block';
       const outlookEl = document.getElementById('rainOutlookText');
-      const insightEl = document.getElementById('precipInsightText');
-      if (outlookEl) outlookEl.innerText = longText;
-      if (insightEl) insightEl.innerText = longText;
+      // const insightEl = document.getElementById('precipInsightText');
+      // if (outlookEl) outlookEl.innerText = longText;
+      // if (insightEl) insightEl.innerText = longText;
+      if (outlookEl && longText) {
+        outlookEl.innerText = longText;
+      }
     }
   } catch (error) {
     console.error('Failed to load precipitation insight:', error);
