@@ -3,8 +3,8 @@ let currentLat = '27.7000';
 let currentLon = '83.4500';
 const API_BASE = 'https://nepal-weather-forecast-backend.onrender.com';
 
-let lat = 27.7172; // Default Kathmandu latitude
-let lon = 85.3240; // Default Kathmandu longitude
+let lat = 27.7000; // Default Kathmandu latitude
+let lon = 85.4500; // Default Kathmandu longitude
 // Example fetch:
 // fetch(`${API_BASE}/api/precipitation-insight?lat=...`)
 
