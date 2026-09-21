@@ -339,8 +339,11 @@ app.get('/api/search-locations', async (req, res) => {
 
     const nominatimUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&countrycodes=np&accept-language=en&limit=10`;
     
+    // 👇 Change the User-Agent to a completely unique app string
     const response = await axios.get(nominatimUrl, {
-      headers: { 'User-Agent': 'NepalWeatherForecastApp/1.0 (contact@example.com)' }
+      headers: { 
+        'User-Agent': 'NepalWeatherForecastApp-Production-v1.0 (support@nwfnp.netlify.app)' 
+      }
     });
 
     const seenNames = new Set();
@@ -360,10 +363,10 @@ app.get('/api/search-locations', async (req, res) => {
 
     res.json({ success: true, data: locations });
   } catch (error) {
+    console.error("Search API Error:", error.message);
     res.status(500).json({ success: false, error: error.message });
   }
 });
-
 
 const PORT = 5000;
 app.listen(PORT, () => console.log(`Proxy running on http://localhost:${PORT}`));
