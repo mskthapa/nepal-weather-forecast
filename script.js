@@ -154,70 +154,6 @@ async function loadCurrentWeather(lat, lon) {
   }
 }
 
-// async function loadPrecipitationInsight(lat, lon) {
-//   const precipSection = document.getElementById('rainChartSection') || document.querySelector('.precipitation-section');
-//   if (!precipSection) return;
-
-//   // Instantly hide while loading new location data so old rain doesn't linger
-//   precipSection.style.display = 'none';
-
-//   try {
-//     const targetLat = lat !== undefined ? lat : currentLat;
-//     const targetLon = lon !== undefined ? lon : currentLon;
-
-//     const [insightRes, rainRes] = await Promise.all([
-//       fetch(`${API_BASE}/api/precipitation-insight?lat=${targetLat}&lon=${targetLon}`),
-//       fetch(`${API_BASE}/api/hourly-rain?lat=${targetLat}&lon=${targetLon}`)
-//     ]);
-
-//     let hasActiveRain = false;
-//     let longText = "";
-
-//     if (rainRes.ok) {
-//       const rainJson = await rainRes.json();
-//       if (rainJson.success && Array.isArray(rainJson.data)) {
-//         hasActiveRain = rainJson.data.some(hour => (hour.qpf > 0 || hour.precipChance > 15));
-//       }
-//     }
-
-//     if (insightRes.ok) {
-//       const result = await insightRes.json();
-//       if (result.success && result.data) {
-//         const insightObj = Array.isArray(result.data) ? result.data[0] : result.data;
-//         if (insightObj?.insightTextLong) {
-//           longText = Array.isArray(insightObj.insightTextLong) ? insightObj.insightTextLong[0] : insightObj.insightTextLong;
-//         }
-//       }
-//     }
-
-//     const textLower = longText.toLowerCase();
-//     const isDryText = textLower.includes("no rain") || 
-//                       textLower.includes("no precipitation") || 
-//                       textLower.includes("dry") || 
-//                       textLower.includes("clear");
-
-//     if (isDryText) {
-//       hasActiveRain = false;
-//     }
-
-//     if (!hasActiveRain) {
-//       precipSection.style.display = 'none';
-//     } else {
-//       precipSection.style.display = 'block';
-//       const outlookEl = document.getElementById('rainOutlookText');
-//       // const insightEl = document.getElementById('precipInsightText');
-//       // if (outlookEl) outlookEl.innerText = longText;
-//       // if (insightEl) insightEl.innerText = longText;
-//       if (outlookEl && longText) {
-//         outlookEl.innerText = longText;
-//       }
-//     }
-//   } catch (error) {
-//     console.error('Failed to load precipitation insight:', error);
-//     precipSection.style.display = 'none';
-//   }
-// }
-
 async function loadPrecipitationInsight(lat, lon) {
   const precipSection = document.getElementById('rainChartSection') || document.querySelector('.precipitation-section');
   if (!precipSection) return;
@@ -365,52 +301,6 @@ async function loadWeatherMetrics(lat, lon) {
 }
 
 // 6. Fetch and render rain chart
-// async function loadRainChart(lat, lon) {
-//   try {
-//     const targetLat = lat !== undefined ? lat : currentLat;
-//     const targetLon = lon !== undefined ? lon : currentLon;
-
-//     const response = await fetch(`${API_BASE}/api/hourly-rain?lat=${targetLat}&lon=${targetLon}`);
-//     const result = await response.json();
-
-//     const sectionEl = document.getElementById('rainChartSection');
-    
-//     if (!result.success || !result.hasRain) {
-//       if (sectionEl) sectionEl.style.display = 'none';
-//       return;
-//     }
-
-//     if (sectionEl) sectionEl.style.display = 'block';
-
-//     const container = document.getElementById('rainChart');
-//     if (!container) return;
-//     container.innerHTML = '';
-
-//     const baseTime = new Date();
-//     baseTime.setMinutes(0, 0, 0); 
-//     baseTime.setHours(baseTime.getHours() + 1);
-
-//     result.data.forEach((item, index) => {
-//       const barTime = new Date(baseTime.getTime() + (index * 60 * 60 * 1000));
-//       const timeFormatted = barTime.toLocaleTimeString([], { hour: 'numeric', hour12: true }).toLowerCase();
-      
-//       const rawChance = item.precipChance !== undefined ? item.precipChance : (item.pop !== undefined ? item.pop : 0);
-//       const heightPercentage = Math.max(Math.min(rawChance, 100), 10);
-
-//       const col = document.createElement('div');
-//       col.className = 'rain-bar-col';
-//       col.innerHTML = `
-//         <div class="bar-wrapper">
-//           <div class="bar" style="height: ${heightPercentage}%;"></div>
-//         </div>
-//         <span class="time-label">${timeFormatted}</span>
-//       `;
-//       container.appendChild(col);
-//     });
-//   } catch (error) {
-//     console.error('Failed to load rain chart:', error);
-//   }
-// }
 
 async function loadRainChart(lat, lon) {
   // Instantly hide the section right away so old rain never lingers
@@ -475,7 +365,47 @@ async function loadRainChart(lat, lon) {
 }
 
 // Master function to refresh everything when a location is picked
+// function updateWeatherLocation(lat, lon, locationName) {
+//   currentLat = lat;
+//   currentLon = lon;
+  
+//   const commaIndex = locationName.indexOf(',');
+//   let primaryName = locationName;
+//   let remainingLocation = '';
+
+//   if (commaIndex !== -1) {
+//     primaryName = locationName.substring(0, commaIndex).trim();      
+//     remainingLocation = locationName.substring(commaIndex + 1).trim(); 
+//   }
+
+//   const titleEl = document.getElementById('locationTitle');
+//   if (titleEl) {
+//     titleEl.textContent = primaryName;
+//   }
+  
+//   const subEl = document.getElementById('locationSub');
+//   const timeString = new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true });
+  
+//   if (subEl) {
+//     subEl.innerHTML = `${remainingLocation} &bull; As of <span id="updateTime">${timeString}</span>`;
+//   }
+  
+//   loadCurrentWeather(lat, lon);
+//   loadHourlyForecast(lat, lon);
+//   loadDailyForecast(lat, lon);
+//   loadWeatherMetrics(lat, lon);
+//   loadRainChart(lat, lon);
+//   loadInsights(lat, lon);
+//   loadPrecipitationInsight(lat, lon);
+// }
+
 function updateWeatherLocation(lat, lon, locationName) {
+  // --- SAVE TO LOCALSTORAGE ---
+  localStorage.setItem('savedLat', lat);
+  localStorage.setItem('savedLon', lon);
+  localStorage.setItem('savedLocationName', locationName);
+  // ---------------------------
+
   currentLat = lat;
   currentLon = lon;
   
@@ -510,14 +440,39 @@ function updateWeatherLocation(lat, lon, locationName) {
 }
 
 // Initial page load listener
+// window.addEventListener('DOMContentLoaded', () => {
+//   loadCurrentWeather(currentLat, currentLon);
+//   loadHourlyForecast(currentLat, currentLon);
+//   loadDailyForecast(currentLat, currentLon);
+//   loadWeatherMetrics(currentLat, currentLon);
+//   loadRainChart(currentLat, currentLon);
+//   loadInsights(currentLat, currentLon);
+//   loadPrecipitationInsight(currentLat, currentLon);
+// });
+
+// Initial page load listener with LocalStorage check
 window.addEventListener('DOMContentLoaded', () => {
-  loadCurrentWeather(currentLat, currentLon);
-  loadHourlyForecast(currentLat, currentLon);
-  loadDailyForecast(currentLat, currentLon);
-  loadWeatherMetrics(currentLat, currentLon);
-  loadRainChart(currentLat, currentLon);
-  loadInsights(currentLat, currentLon);
-  loadPrecipitationInsight(currentLat, currentLon);
+  const savedLat = localStorage.getItem('savedLat');
+  const savedLon = localStorage.getItem('savedLon');
+  const savedLocationName = localStorage.getItem('savedLocationName');
+
+  if (savedLat && savedLon) {
+    // If a last-viewed location exists, load it using updateWeatherLocation to keep headers correct!
+    currentLat = savedLat;
+    currentLon = savedLon;
+    const locName = savedLocationName || "Saved Location";
+    
+    updateWeatherLocation(savedLat, savedLon, locName);
+  } else {
+    // Otherwise, fallback to your default Butwal setup
+    loadCurrentWeather(currentLat, currentLon);
+    loadHourlyForecast(currentLat, currentLon);
+    loadDailyForecast(currentLat, currentLon);
+    loadWeatherMetrics(currentLat, currentLon);
+    loadRainChart(currentLat, currentLon);
+    loadInsights(currentLat, currentLon);
+    loadPrecipitationInsight(currentLat, currentLon);
+  }
 });
 
 // Search autocomplete logic
@@ -554,7 +509,7 @@ if (searchInput) {
             div.textContent = loc.name;
             
             div.addEventListener('click', () => {
-              searchInput.value = loc.name;
+              searchInput.value = '';
               dropdown.style.display = 'none';
               updateWeatherLocation(loc.lat, loc.lon, loc.name);
             });
@@ -615,4 +570,21 @@ function requestUserLocation() {
     },
     { timeout: 10000, enableHighAccuracy: true }
   );
+}
+
+const homeTitleEl = document.getElementById('homeTitle');
+if (homeTitleEl) {
+  homeTitleEl.addEventListener('click', () => {
+    // Clear the saved custom location from storage
+    localStorage.removeItem('savedLat');
+    localStorage.removeItem('savedLon');
+    localStorage.removeItem('savedLocationName');
+
+    // Reset back to your default home coordinates (Butwal)
+    currentLat = '27.7000';
+    currentLon = '83.4500';
+
+    // Reload the default home weather
+    updateWeatherLocation(currentLat, currentLon, "Butwal, Nepal");
+  });
 }

@@ -481,57 +481,57 @@ section {
 }
 
 /* Update your forecast container class */
-.extended-forecast-container {
+/* .extended-forecast-container {
   display: flex;
   flex-wrap: nowrap;
   overflow-x: auto;
   scroll-behavior: smooth;
   gap: 12px;
   padding-bottom: 10px;
-}
+} */
 
 /* Ensure individual cards don't shrink */
-.extended-forecast-container > div, 
+/* .extended-forecast-container > div, 
 .extended-forecast-container > article {
   flex: 0 0 auto;
   min-width: 110px; 
-}
+} */
 
 /* Optional: Smooth custom scrollbar styling */
-.extended-forecast-container::-webkit-scrollbar {
+/* .extended-forecast-container::-webkit-scrollbar {
   height: 6px;
 }
 .extended-forecast-container::-webkit-scrollbar-thumb {
   background: rgba(255, 255, 255, 0.2);
   border-radius: 3px;
-}
+} */
 
 /* Ensure the forecast container handles smooth scrolling */
-.extended-forecast-container {
+/* .extended-forecast-container {
   display: flex;
   flex-wrap: nowrap;
   overflow-x: auto;
   scroll-behavior: smooth;
   gap: 12px;
   padding-bottom: 10px;
-}
+} */
 
 /* Force every day card to have an equal, fixed width and height */
-.extended-forecast-container .forecast-card,
+/* .extended-forecast-container .forecast-card,
 .extended-forecast-container > div {
-  flex: 0 0 120px; /* Adjust width (e.g., 120px) to your preferred box size */
-  width: 120px;
+  flex: 0 0 120px; Adjust width (e.g., 120px) to your preferred box size  */
+  /* width: 120px;
   height: 100%;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
   box-sizing: border-box;
-}
+} */
 
 /* --- Equal Size Extended Forecast Cards --- */
 
 /* --- Strict Equal-Size Extended Forecast Cards --- */
-.extended-forecast-container {
+/* .extended-forecast-container {
   display: flex;
   flex-wrap: nowrap;
   overflow-x: auto;
@@ -539,10 +539,10 @@ section {
   gap: 12px;
   padding-bottom: 10px;
   width: 100%;
-}
+} */
 
 /* Force absolute uniform dimensions */
-.extended-forecast-container .forecast-card,
+/* .extended-forecast-container .forecast-card,
 .extended-forecast-container .daily-card,
 .extended-forecast-container > div,
 .extended-forecast-container > article {
@@ -550,7 +550,7 @@ section {
   width: 135px !important;
   min-width: 135px !important;
   max-width: 135px !important;
-  height: 220px !important; /* Fixed absolute height for every card */
+  height: 220px !important; 
   min-height: 220px !important;
   max-height: 220px !important;
   
@@ -561,33 +561,33 @@ section {
   text-align: center !important;
   box-sizing: border-box !important;
   padding: 16px 10px !important;
-  overflow: hidden !important; /* Prevents text overflow from resizing the box */
-}
+  overflow: hidden !important; 
+} */
 
 /* Control text containers so they never stretch the box */
-.extended-forecast-container .forecast-card h4,
+/* .extended-forecast-container .forecast-card h4,
 .extended-forecast-container .daily-card h4 {
   font-size: 13px !important;
   margin: 0 !important;
   white-space: nowrap;
-}
+} */
 
-.extended-forecast-container .forecast-card img,
+/* .extended-forecast-container .forecast-card img,
 .extended-forecast-container .daily-card img {
   width: 40px !important;
   height: 40px !important;
   object-fit: contain;
-  margin: auto 0; /* Centers the icon perfectly in the middle gap */
-}
+  margin: auto 0; 
+} */
 
-.extended-forecast-container .forecast-card p,
+/* .extended-forecast-container .forecast-card p,
 .extended-forecast-container .daily-card p {
   font-size: 11px !important;
   line-height: 1.3 !important;
   margin: 0 !important;
   width: 100% !important;
   word-break: break-word;
-}
+} */
 /* --- Advanced Weather Metrics Grid --- */
 .metrics-grid {
   display: grid;
@@ -716,14 +716,11 @@ section {
 }
 
 /* --- Mobile Responsiveness (Devices below 768px) --- */
-/* --- Mobile Responsiveness (Devices below 768px) --- */
 @media (max-width: 767px) {
-  body {
-      body, .app-container{
+  /* body, .app-container {
     padding-left: 20px;
     padding-right: 20px;
     box-sizing: border-box;
-  }
   }
 
   body > h1 {
@@ -735,6 +732,12 @@ section {
     padding: 14px;
     border-radius: 16px;
     margin-bottom: 14px;
+  } */
+
+    body {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 30px;
   }
 
   /* Current Weather Section Mobile Adjustments */
@@ -764,8 +767,24 @@ section {
     padding-top: 10px;
   }
 
+  .location-btn {
+  background: #2563eb;
+  color: #ffffff;
+  border: none;
+  border-radius: 12px;
+  width: 38px;
+  height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: background 0.2s ease, transform 0.1s ease;
+  flex-shrink: 0;
+}
+
   .search-container {
-    max-width: 100%;
+    max-width: 70%;
     margin-bottom: 14px;
   }
 
@@ -788,7 +807,7 @@ section {
     font-size: 13px;
   }
 
-    .daily-card {
+  .daily-card {
     min-width: 25%;
     padding: 10px 6px;
     gap: 10px;
@@ -802,9 +821,8 @@ section {
     font-size: 13px;
   }
 
-
   /* Advanced Weather Metrics Grid Mobile Stack */
-  .metrics-grid{
+  .metrics-grid {
     grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
     gap: 12px;
   }
@@ -816,39 +834,42 @@ section {
   .metric-card p {
     font-size: 15px;
   }
-
-
 }
 
-/* Extra Small Phones (Below 380px, e.g., iPhone SE / older devices) */
-@media (max-width: 491px) {
+/* --- Extra Small Phones (Below 380px, e.g., iPhone SE / older devices) --- */
+@media (max-width: 511px) {
 
+    .search-container {
+    max-width: 70%;
+    margin-bottom: 14px;
+  }
 
-  .current-card .temp-display {
-    font-size: 38px;
+  .search-box {
+    padding: 8px 12px;
+  }
+
+.current-card .temp-display {
+    font-size: 38px !important;
   }
   
   .main-weather-icon {
-    width: 60px;
-    height: 60px;
+    width: 60px !important;
+    height: 60px !important;
   }
 
-    .daily-card {
-    min-width: 25%;
-    padding: 10px 6px;
-    gap: 10px;
+  .daily-card {
+    min-width: 25% !important;
+    padding: 10px 6px !important;
+    gap: 10px !important;
   }
 
-  .daily-card p {
-    font-size: 13px;
-  }
-
+  .daily-card p,
   .daily-card .day-name {
-    font-size: 13px;
+    font-size: 13px !important;
   }
 
-  .metrics-grid{
-    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-    gap: 12px;
+  .metrics-grid {
+    grid-template-columns: repeat(2, 1fr) !important; /* Forces a strict 2-column layout */
+    gap: 8px !important;
   }
 }
