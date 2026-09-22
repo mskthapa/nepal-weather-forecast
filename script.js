@@ -39,6 +39,7 @@ async function loadHourlyForecast(lat, lon) {
         const topIconImg = document.querySelector('.top-right-icon') || document.querySelector('#topWeatherIcon') || document.querySelector('.current-card img');
         let currentIconSrc = topIconImg ? topIconImg.src : '';
 
+
         // Fallback to hourly data if top icon isn't found yet
         if (!currentIconSrc || currentIconSrc.includes('undefined')) {
           const firstHour = hourlyArray[0];
@@ -122,36 +123,109 @@ async function loadDailyForecast(lat, lon) {
 
 // 3. Fetch and render current weather
 
+// async function loadPrecipitationInsight(lat, lon) {
+//   const precipSection = document.getElementById('rainChartSection') || document.querySelector('.precipitation-section');
+//   if (!precipSection) return;
+
+//   precipSection.style.display = 'none';
+
+//   try {
+//     const targetLat = lat !== undefined ? lat : currentLat;
+//     const targetLon = lon !== undefined ? lon : currentLon;
+
+//     const [insightRes, rainRes] = await Promise.all([
+//       fetch(`${API_BASE}/api/precipitation-insight?lat=${targetLat}&lon=${targetLon}`),
+//       fetch(`${API_BASE}/api/hourly-rain?lat=${targetLat}&lon=${targetLon}`)
+//     ]);
+
+//     let hasHighRainChance = false;
+//     let longText = "";
+
+//     if (rainRes.ok) {
+//       const rainJson = await rainRes.json();
+//       if (rainJson.success && Array.isArray(rainJson.data)) {
+//         // Strictly check if ANY hour has a chance >= 40% or QPF > 0
+//         hasHighRainChance = rainJson.data.some(hour => {
+//           const chance = hour.precipChance !== undefined ? hour.precipChance : (hour.pop !== undefined ? hour.pop : 0);
+//           return (hour.qpf > 0 || chance >= 40);
+//         });
+//       }
+//     }
+
+//     if (insightRes.ok) {
+//       const result = await insightRes.json();
+//       if (result.success && result.data) {
+//         const insightObj = Array.isArray(result.data) ? result.data[0] : result.data;
+//         if (insightObj?.insightTextLong) {
+//           longText = Array.isArray(insightObj.insightTextLong) ? insightObj.insightTextLong[0] : insightObj.insightTextLong;
+//         }
+//       }
+//     }
+
+//     // If the hourly chance is less than 40%, force-hide it regardless of backend text
+//     if (!hasHighRainChance) {
+//       precipSection.style.display = 'none';
+//       return;
+//     }
+
+//     // Also double-check if the text explicitly states it's dry
+//     const textLower = longText.toLowerCase();
+//     const isDryText = textLower.includes("no rain") || 
+//                       textLower.includes("no precipitation") || 
+//                       textLower.includes("dry") || 
+//                       textLower.includes("clear");
+
+//     if (isDryText) {
+//       precipSection.style.display = 'none';
+//     } else {
+//       precipSection.style.display = 'block';
+//       const outlookEl = document.getElementById('rainOutlookText');
+//       if (outlookEl && longText) {
+//         outlookEl.innerText = longText;
+//       }
+//     }
+//   } catch (error) {
+//     console.error('Failed to load precipitation insight:', error);
+//     precipSection.style.display = 'none';
+//   }
+// }
+
 async function loadPrecipitationInsight(lat, lon) {
   const precipSection = document.getElementById('rainChartSection') || document.querySelector('.precipitation-section');
   if (!precipSection) return;
 
-  precipSection.style.display = 'none';
-
   try {
-    const targetLat = lat !== undefined ? lat : currentLat;
-    const targetLon = lon !== undefined ? lon : currentLon;
+    const targetLat = lat !== undefined ? lat : (typeof currentLat !== 'undefined' ? currentLat : '27.714');
+    const targetLon = lon !== undefined ? lon : (typeof currentLon !== 'undefined' ? currentLon : '85.311');
 
     const [insightRes, rainRes] = await Promise.all([
-      fetch(`${API_BASE}/api/precipitation-insight?lat=${targetLat}&lon=${targetLon}`),
-      fetch(`${API_BASE}/api/hourly-rain?lat=${targetLat}&lon=${targetLon}`)
+      fetch(`${API_BASE}/api/precipitation-insight?lat=${targetLat}&lon=${targetLon}`).catch(() => null),
+      fetch(`${API_BASE}/api/hourly-rain?lat=${targetLat}&lon=${targetLon}`).catch(() => null)
     ]);
 
     let hasHighRainChance = false;
     let longText = "";
 
-    if (rainRes.ok) {
+    if (rainRes && rainRes.ok) {
       const rainJson = await rainRes.json();
       if (rainJson.success && Array.isArray(rainJson.data)) {
-        // Strictly check if ANY hour has a chance >= 40% or QPF > 0
-        hasHighRainChance = rainJson.data.some(hour => {
+        // 1. FIX: Inspect ONLY the next 6 hours instead of all 24 hours
+        const upcomingHours = rainJson.data.slice(0, 3);
+        
+        hasHighRainChance = upcomingHours.some(hour => {
           const chance = hour.precipChance !== undefined ? hour.precipChance : (hour.pop !== undefined ? hour.pop : 0);
           return (hour.qpf > 0 || chance >= 40);
         });
       }
     }
 
-    if (insightRes.ok) {
+    // If there is no high rain chance in the NEXT 6 HOURS, force hide and stop immediately
+    if (!hasHighRainChance) {
+      precipSection.style.display = 'none';
+      return;
+    }
+
+    if (insightRes && insightRes.ok) {
       const result = await insightRes.json();
       if (result.success && result.data) {
         const insightObj = Array.isArray(result.data) ? result.data[0] : result.data;
@@ -161,13 +235,7 @@ async function loadPrecipitationInsight(lat, lon) {
       }
     }
 
-    // If the hourly chance is less than 40%, force-hide it regardless of backend text
-    if (!hasHighRainChance) {
-      precipSection.style.display = 'none';
-      return;
-    }
-
-    // Also double-check if the text explicitly states it's dry
+    // Check if text indicates dry weather
     const textLower = longText.toLowerCase();
     const isDryText = textLower.includes("no rain") || 
                       textLower.includes("no precipitation") || 
@@ -176,16 +244,20 @@ async function loadPrecipitationInsight(lat, lon) {
 
     if (isDryText) {
       precipSection.style.display = 'none';
-    } else {
-      precipSection.style.display = 'block';
-      const outlookEl = document.getElementById('rainOutlookText');
-      if (outlookEl && longText) {
-        outlookEl.innerText = longText;
-      }
+      return;
     }
+
+    // Update text content without forcing display:block prematurely
+    const outlookEl = document.getElementById('rainOutlookText');
+    if (outlookEl && longText) {
+      outlookEl.innerText = longText;
+    }
+
+    // Note: Displaying the section is handled by loadRainChart once chart bars are drawn
+
   } catch (error) {
     console.error('Failed to load precipitation insight:', error);
-    precipSection.style.display = 'none';
+    if (precipSection) precipSection.style.display = 'none';
   }
 }
 
@@ -361,28 +433,103 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // 6. Fetch and render rain chart
 
+// async function loadRainChart(lat, lon) {
+//   // Instantly hide the section right away so old rain never lingers
+//   const sectionEl = document.getElementById('rainChartSection');
+//   if (sectionEl) sectionEl.style.display = 'none';
+
+//   try {
+//     const targetLat = lat !== undefined ? lat : currentLat;
+//     const targetLon = lon !== undefined ? lon : currentLon;
+
+//     const response = await fetch(`${API_BASE}/api/hourly-rain?lat=${targetLat}&lon=${targetLon}`);
+//     const result = await response.json();
+    
+//     if (!result.success || !result.hasRain || !result.data || result.data.length === 0) {
+//       if (sectionEl) sectionEl.style.display = 'none';
+//       return;
+//     }
+
+//     // Optional safety check: ensure at least one hour has actual rain likelihood
+//     const hasActualRain = result.data.some(item => {
+//       const chance = item.precipChance !== undefined ? item.precipChance : (item.pop !== undefined ? item.pop : 0);
+//       const qpf = item.qpf || 0;
+//       return chance >= 40 || qpf > 0;
+//     });
+
+//     if (!hasActualRain) {
+//       if (sectionEl) sectionEl.style.display = 'none';
+//       return;
+//     }
+
+//     if (sectionEl) sectionEl.style.display = 'block';
+
+//     const container = document.getElementById('rainChart');
+//     if (!container) return;
+//     container.innerHTML = '';
+
+//     const baseTime = new Date();
+//     baseTime.setMinutes(0, 0, 0); 
+//     baseTime.setHours(baseTime.getHours() + 1);
+
+//     result.data.forEach((item, index) => {
+//       const barTime = new Date(baseTime.getTime() + (index * 60 * 60 * 1000));
+//       const timeFormatted = barTime.toLocaleTimeString([], { hour: 'numeric', hour12: true }).toLowerCase();
+      
+//       const rawChance = item.precipChance !== undefined ? item.precipChance : (item.pop !== undefined ? item.pop : 0);
+//       const heightPercentage = Math.max(Math.min(rawChance, 100), 10);
+
+//       const col = document.createElement('div');
+//       col.className = 'rain-bar-col';
+//       col.innerHTML = `
+//         <div class="bar-wrapper">
+//           <div class="bar" style="height: ${heightPercentage}%;"></div>
+//         </div>
+//         <span class="time-label">${timeFormatted}</span>
+//       `;
+//       container.appendChild(col);
+//     });
+//   } catch (error) {
+//     console.error('Failed to load rain chart:', error);
+//     if (sectionEl) sectionEl.style.display = 'none';
+//   }
+// }
+
 async function loadRainChart(lat, lon) {
-  // Instantly hide the section right away so old rain never lingers
   const sectionEl = document.getElementById('rainChartSection');
+  const container = document.getElementById('rainChart');
+
+  // 1. Keep section hidden initially
   if (sectionEl) sectionEl.style.display = 'none';
 
   try {
-    const targetLat = lat !== undefined ? lat : currentLat;
-    const targetLon = lon !== undefined ? lon : currentLon;
+    const targetLat = lat !== undefined ? lat : (typeof currentLat !== 'undefined' ? currentLat : '27.714');
+    const targetLon = lon !== undefined ? lon : (typeof currentLon !== 'undefined' ? currentLon : '85.311');
 
     const response = await fetch(`${API_BASE}/api/hourly-rain?lat=${targetLat}&lon=${targetLon}`);
-    const result = await response.json();
     
-    if (!result.success || !result.hasRain || !result.data || result.data.length === 0) {
+    if (!response.ok) {
       if (sectionEl) sectionEl.style.display = 'none';
       return;
     }
 
-    // Optional safety check: ensure at least one hour has actual rain likelihood
-    const hasActualRain = result.data.some(item => {
-      const chance = item.precipChance !== undefined ? item.precipChance : (item.pop !== undefined ? item.pop : 0);
-      const qpf = item.qpf || 0;
-      return chance >= 40 || qpf > 0;
+    const result = await response.json();
+    
+    // Defensive check: extract array safely regardless of response wrapper
+    const rainArray = Array.isArray(result?.data) ? result.data : (Array.isArray(result) ? result : []);
+
+    if (!result.success || rainArray.length === 0) {
+      if (sectionEl) sectionEl.style.display = 'none';
+      return;
+    }
+
+    // 2. Inspect ONLY the immediate next 6 hours
+    const upcomingHours = rainArray.slice(0, 3);
+    const hasActualRain = upcomingHours.some(item => {
+      if (!item) return false;
+      const chance = item.precipChance ?? item.pop ?? item.precip ?? 0;
+      const qpf = item.qpf ?? item.amount ?? 0;
+      return Number(chance) >= 40 || Number(qpf) > 0;
     });
 
     if (!hasActualRain) {
@@ -390,21 +537,27 @@ async function loadRainChart(lat, lon) {
       return;
     }
 
-    if (sectionEl) sectionEl.style.display = 'block';
+    // 3. Verify target container exists before clearing placeholder
+    if (!container) {
+      console.warn('[Rain Chart] Element id="rainChart" not found in DOM.');
+      if (sectionEl) sectionEl.style.display = 'none';
+      return;
+    }
 
-    const container = document.getElementById('rainChart');
-    if (!container) return;
+    // 4. CLEAR "Loading precipitation chart..." text BEFORE rendering bars
     container.innerHTML = '';
 
     const baseTime = new Date();
     baseTime.setMinutes(0, 0, 0); 
     baseTime.setHours(baseTime.getHours() + 1);
 
-    result.data.forEach((item, index) => {
+    // 5. Build and append chart bars
+    rainArray.forEach((item, index) => {
+      if (!item) return;
       const barTime = new Date(baseTime.getTime() + (index * 60 * 60 * 1000));
       const timeFormatted = barTime.toLocaleTimeString([], { hour: 'numeric', hour12: true }).toLowerCase();
       
-      const rawChance = item.precipChance !== undefined ? item.precipChance : (item.pop !== undefined ? item.pop : 0);
+      const rawChance = Number(item.precipChance ?? item.pop ?? item.precip ?? 0);
       const heightPercentage = Math.max(Math.min(rawChance, 100), 10);
 
       const col = document.createElement('div');
@@ -417,6 +570,10 @@ async function loadRainChart(lat, lon) {
       `;
       container.appendChild(col);
     });
+
+    // 6. FINALLY show the card section ONLY after chart bars are attached
+    if (sectionEl) sectionEl.style.display = 'block';
+
   } catch (error) {
     console.error('Failed to load rain chart:', error);
     if (sectionEl) sectionEl.style.display = 'none';
