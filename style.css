@@ -475,6 +475,22 @@ section {
     font-size: 13px;
   }
 
+/* Rain percentage badge styling */
+.precip-badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #60a5fa; /* Soft light blue */
+  margin-top: 4px;
+}
+
+.precip-badge .drop-icon {
+  font-size: 0.75rem;
+}  
+
 /* --- Media Queries for Responsiveness --- */
 
 /* --- Tablets & Medium Screens (768px and up) --- */

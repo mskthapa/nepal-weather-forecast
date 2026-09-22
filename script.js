@@ -16,6 +16,78 @@ let currentLon = '83.4500';
 
 
 
+// async function loadHourlyForecast(lat, lon) {
+//   try {
+//     const targetLat = lat !== undefined ? lat : currentLat;
+//     const targetLon = lon !== undefined ? lon : currentLon;
+
+//     const response = await fetch(`${API_BASE}/api/hourly-forecast?lat=${targetLat}&lon=${targetLon}`);
+//     const result = await response.json();
+    
+//     if (result.success && result.data) {
+//       let hourlyArray = Array.isArray(result.data) ? result.data : (result.data.hourly || Object.values(result.data)[0]);
+
+//       if (Array.isArray(hourlyArray) && hourlyArray.length > 0) {
+//         const container = document.getElementById('hourlyForecast');
+//         if (!container) return;
+//         container.innerHTML = ''; // Clear loading message
+        
+//         const liveTemp = hourlyArray[0].temperature !== undefined ? hourlyArray[0].temperature : (hourlyArray[0].temp !== undefined ? hourlyArray[0].temp : null);
+//         const currentTempText = liveTemp !== null ? `${liveTemp}°C` : '33°C';
+
+//         // 🔑 FIX: Look for the top section's icon image and reuse its exact source so they match!
+//         const topIconImg = document.querySelector('.top-right-icon') || document.querySelector('#topWeatherIcon') || document.querySelector('.current-card img');
+//         let currentIconSrc = topIconImg ? topIconImg.src : '';
+
+
+//         // Fallback to hourly data if top icon isn't found yet
+//         if (!currentIconSrc || currentIconSrc.includes('undefined')) {
+//           const firstHour = hourlyArray[0];
+//           const rawIconCode = firstHour.iconCode || firstHour.wxIcon || firstHour.icon || firstHour.weatherIcon;
+//           currentIconSrc = getWeatherIconPath(rawIconCode);
+//         }
+        
+//         const nowCard = document.createElement('div');
+//         nowCard.className = 'hourly-card';
+//         nowCard.innerHTML = `
+//           <p class="time"><strong>Now</strong></p>
+//           <img src="${currentIconSrc}" alt="Weather Icon" class="forecast-icon" width="40" height="40">
+//           <p class="temp">${currentTempText}</p>
+//         `;
+//         container.appendChild(nowCard);
+        
+//         const baseTime = new Date();
+//         baseTime.setMinutes(0, 0, 0); 
+//         baseTime.setHours(baseTime.getHours() + 1); 
+
+//         hourlyArray.forEach((hour, index) => {
+//           if (index === 0) return; 
+
+//           const tempValue = hour.temperature !== undefined ? hour.temperature : (hour.temp !== undefined ? hour.temp : '--');
+//           const iconCode = hour.iconCode || hour.wxIcon || hour.icon || hour.weatherIcon;
+
+//           const cardTime = new Date(baseTime.getTime() + ((index - 1) * 60 * 60 * 1000));
+//           const timeFormatted = cardTime.toLocaleTimeString([], { hour: 'numeric', hour12: true });
+
+//           const iconUrl = getWeatherIconPath(iconCode);
+          
+//           const card = document.createElement('div');
+//           card.className = 'hourly-card';
+//           card.innerHTML = `
+//             <p class="time"><strong>${timeFormatted}</strong></p>
+//             <img src="${iconUrl}" alt="Weather Icon" class="forecast-icon" width="40" height="40">
+//             <p class="temp">${tempValue}°C</p>
+//           `;
+//           container.appendChild(card);
+//         });
+//       }
+//     }
+//   } catch (error) {
+//     console.error('Failed to load hourly forecast:', error);
+//   }
+// }
+
+
 async function loadHourlyForecast(lat, lon) {
   try {
     const targetLat = lat !== undefined ? lat : currentLat;
@@ -28,31 +100,54 @@ async function loadHourlyForecast(lat, lon) {
       let hourlyArray = Array.isArray(result.data) ? result.data : (result.data.hourly || Object.values(result.data)[0]);
 
       if (Array.isArray(hourlyArray) && hourlyArray.length > 0) {
+        window.latestHourlyData = hourlyArray;
+
         const container = document.getElementById('hourlyForecast');
         if (!container) return;
-        container.innerHTML = ''; // Clear loading message
+        container.innerHTML = '';
         
         const liveTemp = hourlyArray[0].temperature !== undefined ? hourlyArray[0].temperature : (hourlyArray[0].temp !== undefined ? hourlyArray[0].temp : null);
-        const currentTempText = liveTemp !== null ? `${liveTemp}°C` : '33°C';
+        const currentTempText = liveTemp !== null ? `${liveTemp}°C` : '28°C';
 
-        // 🔑 FIX: Look for the top section's icon image and reuse its exact source so they match!
-        const topIconImg = document.querySelector('.top-right-icon') || document.querySelector('#topWeatherIcon') || document.querySelector('.current-card img');
-        let currentIconSrc = topIconImg ? topIconImg.src : '';
+        // Parse rain chance for "Now"
+        const nowRawPop = hourlyArray[0].precipChance ?? hourlyArray[0].pop ?? hourlyArray[0].precip ?? 0;
+        const nowPop = Math.round(parseInt(String(nowRawPop).replace(/[^0-9]/g, ''), 10) || 0);
+        const nowPrecipHtml = nowPop > 0 ? `<div class="precip-badge"><span class="drop-icon">💧</span>${nowPop}%</div>` : '';
 
-
-        // Fallback to hourly data if top icon isn't found yet
-        if (!currentIconSrc || currentIconSrc.includes('undefined')) {
-          const firstHour = hourlyArray[0];
-          const rawIconCode = firstHour.iconCode || firstHour.wxIcon || firstHour.icon || firstHour.weatherIcon;
-          currentIconSrc = getWeatherIconPath(rawIconCode);
-        }
+        // 🔑 ICON RESOLUTION FIX: Check all possible icon keys in hourly item
+        const firstHour = hourlyArray[0];
+        const rawIconCode = firstHour.iconCode ?? firstHour.wxIcon ?? firstHour.icon ?? firstHour.weatherIcon ?? firstHour.icon_code ?? firstHour.wx_icon;
         
+        let calculatedIconPath = '';
+        if (typeof getWeatherIconPath === 'function' && rawIconCode !== undefined && rawIconCode !== null) {
+          calculatedIconPath = getWeatherIconPath(rawIconCode);
+        }
+
+        // Try DOM top card image -> global cached URL -> calculated hourly path
+        const topIconImg = document.querySelector('.hero-card img, .current-card img, .top-card img, #topWeatherIcon, #currentWeatherIcon, .top-right-icon, [class*="current"] img');
+        let currentIconSrc = '';
+
+        if (topIconImg && topIconImg.src && topIconImg.src.startsWith('http') && !topIconImg.src.includes('undefined')) {
+          currentIconSrc = topIconImg.src;
+        } else if (window.currentWeatherIconUrl && window.currentWeatherIconUrl.startsWith('http') && !window.currentWeatherIconUrl.includes('undefined')) {
+          currentIconSrc = window.currentWeatherIconUrl;
+        } else if (calculatedIconPath && !calculatedIconPath.includes('undefined')) {
+          currentIconSrc = calculatedIconPath;
+        }
+
+        // Failsafe: If still missing, use hour 1's icon code or fallback
+        if (!currentIconSrc || currentIconSrc.includes('undefined')) {
+          const secondHourCode = hourlyArray[1]?.iconCode ?? hourlyArray[1]?.wxIcon ?? hourlyArray[1]?.icon;
+          currentIconSrc = typeof getWeatherIconPath === 'function' ? getWeatherIconPath(secondHourCode) : '';
+        }
+
         const nowCard = document.createElement('div');
         nowCard.className = 'hourly-card';
         nowCard.innerHTML = `
           <p class="time"><strong>Now</strong></p>
-          <img src="${currentIconSrc}" alt="Weather Icon" class="forecast-icon" width="40" height="40">
+          <img id="nowHourlyIcon" src="${currentIconSrc}" alt="Weather Icon" class="forecast-icon" width="40" height="40" onerror="this.onerror=null; if(window.currentWeatherIconUrl) this.src=window.currentWeatherIconUrl;">
           <p class="temp">${currentTempText}</p>
+          ${nowPrecipHtml}
         `;
         container.appendChild(nowCard);
         
@@ -64,7 +159,11 @@ async function loadHourlyForecast(lat, lon) {
           if (index === 0) return; 
 
           const tempValue = hour.temperature !== undefined ? hour.temperature : (hour.temp !== undefined ? hour.temp : '--');
-          const iconCode = hour.iconCode || hour.wxIcon || hour.icon || hour.weatherIcon;
+          const iconCode = hour.iconCode || hour.wxIcon || hour.icon || hour.weatherIcon || hour.icon_code;
+
+          const rawPop = hour.precipChance ?? hour.pop ?? hour.precip ?? 0;
+          const pop = Math.round(parseInt(String(rawPop).replace(/[^0-9]/g, ''), 10) || 0);
+          const precipHtml = pop > 0 ? `<div class="precip-badge"><span class="drop-icon">💧</span>${pop}%</div>` : '';
 
           const cardTime = new Date(baseTime.getTime() + ((index - 1) * 60 * 60 * 1000));
           const timeFormatted = cardTime.toLocaleTimeString([], { hour: 'numeric', hour12: true });
@@ -77,6 +176,7 @@ async function loadHourlyForecast(lat, lon) {
             <p class="time"><strong>${timeFormatted}</strong></p>
             <img src="${iconUrl}" alt="Weather Icon" class="forecast-icon" width="40" height="40">
             <p class="temp">${tempValue}°C</p>
+            ${precipHtml}
           `;
           container.appendChild(card);
         });
@@ -87,8 +187,6 @@ async function loadHourlyForecast(lat, lon) {
   }
 }
 
-
-// 2. Fetch and render 7-day daily forecast
 async function loadDailyForecast(lat, lon) {
   try {
     const targetLat = lat !== undefined ? lat : currentLat;
@@ -100,10 +198,51 @@ async function loadDailyForecast(lat, lon) {
     if (result.success) {
       const container = document.getElementById('dailyForecast');
       if (!container) return;
-      container.innerHTML = ''; // Clear loading message
+      container.innerHTML = ''; 
       
-      result.data.forEach(day => {
+      result.data.forEach((day) => {
         const dailyIconUrl = getWeatherIconPath(day.iconCode);
+
+        // 🔑 FIX: Parse numbers out of strings like "35%" or "50%"
+        let pop = 0;
+        const precipCandidates = [
+          day.precipChance,
+          day.dayPrecipChance,
+          day.nightPrecipChance,
+          day.precipChanceNight,
+          day.precipChanceDay,
+          day.pop,
+          day.precip,
+          day.day?.precipChance,
+          day.night?.precipChance
+        ];
+
+        for (const val of precipCandidates) {
+          if (val !== undefined && val !== null) {
+            const parsed = parseInt(String(val).replace(/[^0-9]/g, ''), 10);
+            if (!isNaN(parsed) && parsed > 0) {
+              pop = parsed;
+              break;
+            }
+          }
+        }
+
+        // 🔑 FIX for Tuesday: If daily API returns 0 but condition says Showers/Rain, fall back to hourly rain data
+        if (pop === 0) {
+          const cond = (day.condition || '').toLowerCase();
+          if (cond.includes('rain') || cond.includes('shower') || cond.includes('thunder') || cond.includes('drizzle')) {
+            if (Array.isArray(window.latestHourlyData) && window.latestHourlyData.length > 0) {
+              const maxHourly = Math.max(...window.latestHourlyData.slice(0, 12).map(h => {
+                const p = h.precipChance ?? h.pop ?? h.precip ?? 0;
+                return parseInt(String(p).replace(/[^0-9]/g, ''), 10) || 0;
+              }));
+              if (maxHourly > 0) pop = maxHourly;
+            }
+            if (pop === 0) pop = 35; // Default threshold fallback if condition states rain/showers
+          }
+        }
+
+        const precipHtml = pop > 0 ? `<div class="precip-badge"><span class="drop-icon">💧</span>${pop}%</div>` : '';
 
         const card = document.createElement('div');
         card.className = 'daily-card';
@@ -111,7 +250,8 @@ async function loadDailyForecast(lat, lon) {
           <p class="day-name"><strong>${day.day}</strong></p>
           <img src="${dailyIconUrl}" alt="Weather Icon" class="forecast-icon" width="40" height="40">
           <p class="temps">High: ${day.tempMax}°C | Low: ${day.tempMin}°C</p>
-          <p>${day.condition}</p>
+          <p class="condition-text">${day.condition}</p>
+          ${precipHtml}
         `;
         container.appendChild(card);
       });
@@ -120,6 +260,77 @@ async function loadDailyForecast(lat, lon) {
     console.error('Failed to load daily forecast:', error);
   }
 }
+
+// 2. Fetch and render 7-day daily forecast
+// async function loadDailyForecast(lat, lon) {
+//   try {
+//     const targetLat = lat !== undefined ? lat : currentLat;
+//     const targetLon = lon !== undefined ? lon : currentLon;
+
+//     const response = await fetch(`${API_BASE}/api/daily-forecast?lat=${targetLat}&lon=${targetLon}`);
+//     const result = await response.json();
+    
+//     if (result.success) {
+//       const container = document.getElementById('dailyForecast');
+//       if (!container) return;
+//       container.innerHTML = ''; // Clear loading message
+      
+//       result.data.forEach(day => {
+//         const dailyIconUrl = getWeatherIconPath(day.iconCode);
+
+//         const card = document.createElement('div');
+//         card.className = 'daily-card';
+//         card.innerHTML = `
+//           <p class="day-name"><strong>${day.day}</strong></p>
+//           <img src="${dailyIconUrl}" alt="Weather Icon" class="forecast-icon" width="40" height="40">
+//           <p class="temps">High: ${day.tempMax}°C | Low: ${day.tempMin}°C</p>
+//           <p>${day.condition}</p>
+//         `;
+//         container.appendChild(card);
+//       });
+//     }
+//   } catch (error) {
+//     console.error('Failed to load daily forecast:', error);
+//   }
+// }
+
+// async function loadDailyForecast(lat, lon) {
+//   try {
+//     const targetLat = lat !== undefined ? lat : currentLat;
+//     const targetLon = lon !== undefined ? lon : currentLon;
+
+//     const response = await fetch(`${API_BASE}/api/daily-forecast?lat=${targetLat}&lon=${targetLon}`);
+//     const result = await response.json();
+    
+//     if (result.success) {
+//       const container = document.getElementById('dailyForecast');
+//       if (!container) return;
+//       container.innerHTML = ''; // Clear loading message
+      
+//       result.data.forEach(day => {
+//         const dailyIconUrl = getWeatherIconPath(day.iconCode);
+
+//         // Extract rain chance for daily cards
+//         const rawPop = day.precipChance ?? day.dayPrecipChance ?? day.pop ?? day.precip ?? 0;
+//         const pop = Math.round(Number(rawPop));
+//         const precipHtml = pop > 0 ? `<div class="precip-badge"><span class="drop-icon">💧</span>${pop}%</div>` : '';
+
+//         const card = document.createElement('div');
+//         card.className = 'daily-card';
+//         card.innerHTML = `
+//           <p class="day-name"><strong>${day.day}</strong></p>
+//           <img src="${dailyIconUrl}" alt="Weather Icon" class="forecast-icon" width="40" height="40">
+//           <p class="temps">High: ${day.tempMax}°C | Low: ${day.tempMin}°C</p>
+//           <p class="condition-text">${day.condition}</p>
+//           ${precipHtml}
+//         `;
+//         container.appendChild(card);
+//       });
+//     }
+//   } catch (error) {
+//     console.error('Failed to load daily forecast:', error);
+//   }
+// }
 
 // 3. Fetch and render current weather
 
@@ -261,6 +472,74 @@ async function loadPrecipitationInsight(lat, lon) {
   }
 }
 
+// async function loadCurrentWeather(lat, lon) {
+//   try {
+//     const targetLat = lat !== undefined ? lat : currentLat;
+//     const targetLon = lon !== undefined ? lon : currentLon;
+
+//     // Fetch current weather AND hourly rain data at the same time
+//     const [weatherRes, rainRes] = await Promise.all([
+//       fetch(`${API_BASE}/api/current-weather?lat=${targetLat}&lon=${targetLon}`),
+//       fetch(`${API_BASE}/api/hourly-rain?lat=${targetLat}&lon=${targetLon}`)
+//     ]);
+
+//     if (!weatherRes.ok) return;
+
+//     const result = await weatherRes.json();
+    
+//     if (result.success && result.data) {
+//       const data = result.data;
+      
+//       const setElText = (id, val) => {
+//         const el = document.getElementById(id);
+//         if (el) el.textContent = val;
+//       };
+
+//       const locationName = data.cityName || data.location || data.address || data.placeName;
+//       if (locationName) {
+//         const titleEl = document.getElementById('locationTitle');
+//         if (titleEl) titleEl.textContent = locationName;
+//       }
+
+//       const regionName = data.region || data.state || data.country || "";
+//       const subEl = document.getElementById('locationSub');
+//       const timeString = new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true });
+//       if (subEl) {
+//         const fullSubtext = regionName ? `${regionName} &bull; As of ` : `As of `;
+//         subEl.innerHTML = `${fullSubtext}<span id="updateTime">${timeString}</span>`;
+//       }
+
+//       setElText('currentTemp', data.temperature);
+//       setElText('currentCondition', data.condition);
+//       setElText('feelsLike', data.feelsLike);
+//       setElText('humidity', data.humidity);
+//       setElText('uvIndex', data.uvIndex);
+
+//       // --- SMART RAIN CHANCE FALLBACK ---
+//       let finalRainChance = data.precipChance !== undefined ? data.precipChance : 0;
+      
+//       // If current weather says 0, check the hourly rain API for a more accurate current chance
+//       if ((!finalRainChance || finalRainChance === 0 || finalRainChance === "0") && rainRes.ok) {
+//         const rainJson = await rainRes.json();
+//         if (rainJson.success && Array.isArray(rainJson.data) && rainJson.data.length > 0) {
+//           const firstHour = rainJson.data[0];
+//           finalRainChance = firstHour.precipChance !== undefined ? firstHour.precipChance : (firstHour.pop !== undefined ? firstHour.pop : 0);
+//         }
+//       }
+//       setElText('precipitation', `${finalRainChance}`);
+//       // ----------------------------------
+      
+//       const iconImgEl = document.getElementById('currentWeatherIcon');
+//       if (iconImgEl) {
+//         iconImgEl.src = getWeatherIconPath(data.iconCode);
+//       }
+//     }
+//   } catch (error) {
+//     console.error('Failed to load current weather:', error);
+//   }
+// }
+
+
 async function loadCurrentWeather(lat, lon) {
   try {
     const targetLat = lat !== undefined ? lat : currentLat;
@@ -318,16 +597,29 @@ async function loadCurrentWeather(lat, lon) {
       setElText('precipitation', `${finalRainChance}`);
       // ----------------------------------
       
+      // --- TOP ICON SETTING & HOURLY "NOW" SYNC ---
+      const mainIconUrl = getWeatherIconPath(data.iconCode);
+      
+      // Cache image URL globally for other functions
+      window.currentWeatherIconUrl = mainIconUrl;
+
+      // 1. Update top blue card icon
       const iconImgEl = document.getElementById('currentWeatherIcon');
       if (iconImgEl) {
-        iconImgEl.src = getWeatherIconPath(data.iconCode);
+        iconImgEl.src = mainIconUrl;
       }
+
+      // 2. Immediately sync the "Now" card in Hourly Forecast if it exists
+      const nowIconEl = document.getElementById('nowHourlyIcon') || document.querySelector('#hourlyForecast .hourly-card:first-child img');
+      if (nowIconEl) {
+        nowIconEl.src = mainIconUrl;
+      }
+      // --------------------------------------------
     }
   } catch (error) {
     console.error('Failed to load current weather:', error);
   }
 }
-
 
 
 // 4. Fetch and render weather insights
