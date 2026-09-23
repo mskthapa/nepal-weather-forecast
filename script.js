@@ -1052,3 +1052,30 @@ if (homeTitleEl) {
     updateWeatherLocation(currentLat, currentLon, "Butwal, Nepal");
   });
 }
+
+const NodeCache = require('node-cache');
+// Cache weather responses for 10 minutes (600 seconds)
+const weatherCache = new NodeCache({ stdTTL: 600 });
+
+app.get('/api/current-weather', async (req, res) => {
+  const { lat, lon } = req.query;
+  const cacheKey = `current_${lat}_${lon}`;
+
+  // Return cached result immediately if present
+  if (weatherCache.has(cacheKey)) {
+    return res.json(weatherCache.get(cacheKey));
+  }
+
+  try {
+    // Fetch fresh data from external weather provider
+    const weatherData = await fetchExternalWeatherData(lat, lon);
+    const responsePayload = { success: true, data: weatherData };
+
+    // Save in memory cache
+    weatherCache.set(cacheKey, responsePayload);
+
+    return res.json(responsePayload);
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+});
