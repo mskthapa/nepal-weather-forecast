@@ -52,10 +52,15 @@
 </head>
 <body>
 
-    <h1 id="homeTitle" style="cursor: pointer;">Nepal Weather Forecast</h1>
+    <!-- <h1 id="homeTitle" style="cursor: pointer;">Nepal Weather Forecast</h1> -->
+
+    <!-- <h1 id="homeTitle" style="cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px;">
+  <img src="icon01.png" alt="Nepal Weather Forecast Logo" width="40" height="40" style="border-radius: 8px; object-fit: cover;">
+  <span>Nepal Weather Forecast</span>
+</h1> -->
 
         <!-- Nepal Location Search Bar -->
-<div class="search-container">
+<!-- <div class="search-container">
   <div class="search-wrapper-flex">
     <div class="search-box">
       <i class="fa-solid fa-magnifying-glass"></i>
@@ -64,6 +69,29 @@
     <button id="getLocationBtn" class="location-btn" title="Use my current location" onclick="requestUserLocation()">
   <i class="fa-solid fa-location-crosshairs"></i>
 </button>
+  </div>
+  <div id="searchResultsDropdown" class="search-dropdown"></div>
+</div> -->
+<div class="search-container">
+  <div class="search-wrapper-flex" style="display: flex; align-items: center; gap: 15px;">
+    
+    <!-- Clickable Logo (Triggers JS Default Reset) -->
+    <a href="javascript:void(0)" id="homeLogo" title="Go to Default View" style="display: flex; align-items: center; text-decoration: none; flex-shrink: 0;" onclick="loadDefaultWeather()">
+      <img 
+        src="android-chrome-512x512.png" 
+        alt="Nepal Weather Forecast Logo" 
+        style="width: 80px; height: 80px; border-radius: 8px; object-fit: cover; cursor: pointer;" 
+      />
+    </a>
+
+    <div class="search-box" style="flex: 1;">
+      <i class="fa-solid fa-magnifying-glass"></i>
+      <input type="text" id="locationSearchInput" placeholder="Search any place in Nepal (e.g., Kathmandu, Pokhara, Butwal)..." autocomplete="off" />
+    </div>
+
+    <button id="getLocationBtn" class="location-btn" title="Use my current location" onclick="requestUserLocation()">
+      <i class="fa-solid fa-location-crosshairs"></i>
+    </button>
   </div>
   <div id="searchResultsDropdown" class="search-dropdown"></div>
 </div>

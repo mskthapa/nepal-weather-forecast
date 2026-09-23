@@ -1036,21 +1036,28 @@ function requestUserLocation() {
   );
 }
 
+// Function to reset back to default home location (Butwal)
+function resetToDefaultLocation() {
+  localStorage.removeItem('savedLat');
+  localStorage.removeItem('savedLon');
+  localStorage.removeItem('savedLocationName');
+
+  currentLat = '27.7000';
+  currentLon = '83.4500';
+
+  updateWeatherLocation(currentLat, currentLon, "Butwal, Nepal");
+}
+
+// Attach listener to Title
 const homeTitleEl = document.getElementById('homeTitle');
 if (homeTitleEl) {
-  homeTitleEl.addEventListener('click', () => {
-    // Clear the saved custom location from storage
-    localStorage.removeItem('savedLat');
-    localStorage.removeItem('savedLon');
-    localStorage.removeItem('savedLocationName');
+  homeTitleEl.addEventListener('click', resetToDefaultLocation);
+}
 
-    // Reset back to your default home coordinates (Butwal)
-    currentLat = '27.7000';
-    currentLon = '83.4500';
-
-    // Reload the default home weather
-    updateWeatherLocation(currentLat, currentLon, "Butwal, Nepal");
-  });
+// Attach listener to Logo
+const homeLogoEl = document.getElementById('homeLogo');
+if (homeLogoEl) {
+  homeLogoEl.addEventListener('click', resetToDefaultLocation);
 }
 
 const NodeCache = require('node-cache');
@@ -1079,3 +1086,12 @@ app.get('/api/current-weather', async (req, res) => {
     return res.status(500).json({ success: false, message: error.message });
   }
 });
+
+// // In script.js
+// const homeLogo = document.getElementById('homeLogo');
+// if (homeLogo) {
+//   homeLogo.addEventListener('click', () => {
+//     // Put your default reset function here (e.g., fetch default city)
+//     loadDefaultWeather(); 
+//   });
+// }
