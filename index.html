@@ -76,31 +76,31 @@
 
 <!-- Top Header Wrapper spanning full screen width -->
 
-<div class="header-nav-bar" style="display: flex; align-items: center; justify-content: space-between; width: 100%; padding: 10px 20px; box-sizing: border-box;">
+<div class="search-container">
+  <div class="search-wrapper-flex" style="display: flex; align-items: center; justify-content: center; gap: 12px;">
+    
+    <!-- Clickable Logo (Resets to Default) -->
+    <a href="javascript:void(0)" id="homeLogo" title="Go to Default View" style="display: flex; align-items: center; text-decoration: none; flex-shrink: 0;">
+      <img 
+        src="android-chrome-512x512.png" 
+        alt="Nepal Weather Forecast Logo" 
+        style="width: 60px; height: 60px; border-radius: 8px; object-fit: cover; cursor: pointer;" 
+      />
+    </a>
 
-  <!-- Logo locked on the far left -->
-  <a href="javascript:void(0)" id="homeLogo" title="Go to Default View" style="display: flex; align-items: center; text-decoration: none; flex-shrink: 0;">
-    <img 
-      src="android-chrome-512x512.png" 
-      alt="Nepal Weather Forecast Logo" 
-      style="width: 60px; height: 60px; border-radius: 8px; object-fit: cover; cursor: pointer;" 
-    />
-  </a>
-
-  <!-- Centered Search Container -->
-  <div class="search-container" style="flex: 1; max-width: 550px; margin: 0 15px;">
-    <div class="search-wrapper-flex" style="display: flex; align-items: center; gap: 10px;">
-      <div class="search-box" style="flex: 1;">
-        <i class="fa-solid fa-magnifying-glass"></i>
-        <input type="text" id="locationSearchInput" placeholder="Search any place in Nepal (e.g., Kathmandu, Pokhara, Butwal)..." autocomplete="off" />
-      </div>
-
-      <button id="getLocationBtn" class="location-btn" title="Use my current location" onclick="requestUserLocation()">
-        <i class="fa-solid fa-location-crosshairs"></i>
-      </button>
+    <!-- Search Box -->
+    <div class="search-box" style="flex: 1;">
+      <i class="fa-solid fa-magnifying-glass"></i>
+      <input type="text" id="locationSearchInput" placeholder="Search any place in Nepal (e.g., Kathmandu, Pokhara, Butwal)..." autocomplete="off" />
     </div>
-    <div id="searchResultsDropdown" class="search-dropdown"></div>
+
+    <!-- Location Button -->
+    <button id="getLocationBtn" class="location-btn" title="Use my current location" onclick="requestUserLocation()">
+      <i class="fa-solid fa-location-crosshairs"></i>
+    </button>
   </div>
+  <div id="searchResultsDropdown" class="search-dropdown"></div>
+</div>
 
   <!-- Empty spacer to keep search bar perfectly centered -->
   <div style="width: 50px; flex-shrink: 0;"></div>
