@@ -353,12 +353,6 @@ section {
   background-color: #252f41;
 }
 
-/* .hourly-temp {
-  font-weight: 600;
-  font-size: 15px;
-  color: #fff;
-} */
-
 .hourly-card .temp{
   font-size: 15px;
   font-weight: bold;
