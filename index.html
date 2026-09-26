@@ -55,16 +55,21 @@
 <link rel="manifest" href="site.webmanifest">
 
     <title>NWF | Weather Dashboard</title>
-    <!-- Google tag (gtag.js) -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-E68ZSQ6LTY"></script>
-      <script>
-        window.dataLayer = window.dataLayer || [];
-        function gtag(){dataLayer.push(arguments);}
-        gtag('js', new Date());
 
-        gtag('config', 'G-E68ZSQ6LTY');
-      </script>
-      <script async src="https://n6wxm.com/vignette.min.js" data-zone="11876017"></script>
+<!-- Deferred Google tag (gtag.js) -->
+<script>
+  window.addEventListener('load', function() {
+    var script = document.createElement('script');
+    script.src = 'https://www.googletagmanager.com/gtag/js?id=G-E68ZSQ6LTY';
+    script.async = true;
+    document.head.appendChild(script);
+
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-E68ZSQ6LTY');
+  });
+</script>
 
 
 </head>
