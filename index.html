@@ -34,10 +34,6 @@
 <meta property="twitter:description" content="Accurate local weather forecasts across Nepal. Live temperature, hourly rainfall percentages, and 7-day weather predictions.">
 <meta property="twitter:image" content="https://nepalweatherforecast.netlify.app/og-preview.png">
 
-  <!-- Stylesheets -->
-  <!-- <link rel="stylesheet" href="style.css">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"> -->
-
   <!-- 1. Inline your local style.css or load it asynchronously like this: -->
 <link rel="stylesheet" href="style.css" media="print" onload="this.media='all'">
 <noscript><link rel="stylesheet" href="style.css"></noscript>
@@ -73,27 +69,6 @@
 
 </head>
 <body>
-
-    <!-- <h1 id="homeTitle" style="cursor: pointer;">Nepal Weather Forecast</h1> -->
-
-    <!-- <h1 id="homeTitle" style="cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px;">
-  <img src="icon01.png" alt="Nepal Weather Forecast Logo" width="40" height="40" style="border-radius: 8px; object-fit: cover;">
-  <span>Nepal Weather Forecast</span>
-</h1> -->
-
-        <!-- Nepal Location Search Bar -->
-<!-- <div class="search-container">
-  <div class="search-wrapper-flex">
-    <div class="search-box">
-      <i class="fa-solid fa-magnifying-glass"></i>
-      <input type="text" id="locationSearchInput" placeholder="Search any place in Nepal (e.g., Kathmandu, Pokhara, Butwal)..." autocomplete="off" />
-    </div>
-    <button id="getLocationBtn" class="location-btn" title="Use my current location" onclick="requestUserLocation()">
-  <i class="fa-solid fa-location-crosshairs"></i>
-</button>
-  </div>
-  <div id="searchResultsDropdown" class="search-dropdown"></div>
-</div> -->
 
 
 <!-- Top Header Wrapper spanning full screen width -->
@@ -169,9 +144,7 @@
 <section id="rainChartSection" class="rain-chart-section" style="display: none;" >
   <h3>Precipitation Outlook</h3>
   <p id="rainOutlookText" class="outlook-text">Rain likely for the next several hours. Locally heavy rainfall possible.</p>
-  
-  <!-- Added dynamic insight text container for the JSON statement -->
-  <!-- <p id="precipInsightText" class="insight-subtext"></p> -->
+
 
   <div class="chart-legend-labels">
     <span>Heavy</span>

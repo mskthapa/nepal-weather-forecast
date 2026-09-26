@@ -330,37 +330,6 @@ app.get('/api/hourly-rain', async (req, res) => {
 });
 
 // 8. Nepal Location Search Route (OpenStreetMap Nominatim)
-// app.get('/api/search-locations', async (req, res) => {
-//   try {
-//     const query = req.query.q;
-//     if (!query) return res.json({ success: true, data: [] });
-
-//     const nominatimUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&countrycodes=np&accept-language=en&limit=10`;
-    
-//     const response = await axios.get(nominatimUrl, {
-//       headers: { 'User-Agent': 'WeatherApp-Nepal' }
-//     });
-
-//     const seenNames = new Set();
-//     const locations = [];
-
-//     for (const item of response.data) {
-//       if (!seenNames.has(item.display_name)) {
-//         seenNames.add(item.display_name);
-//         locations.push({
-//           name: item.display_name,
-//           lat: item.lat,
-//           lon: item.lon
-//         });
-//       }
-//       if (locations.length >= 5) break;
-//     }
-
-//     res.json({ success: true, data: locations });
-//   } catch (error) {
-//     res.status(500).json({ success: false, error: error.message });
-//   }
-// });
 
 app.get('/api/search-locations', async (req, res) => {
   try {
@@ -401,51 +370,6 @@ app.get('/api/search-locations', async (req, res) => {
 
 
 // Add this to your backend server file (e.g., server.js)
-// app.get('/api/precipitation-insight', async (req, res) => {
-//   try {
-//     const { lat, lon } = req.query;
-//     const apiKey = '71f92ea9dd2f4790b92ea9dd2f779061';
-    
-//     // Use your exact working Weather.com insights API URL
-//     const twcUrl = `https://api.weather.com/v3/insights?format=json&units=m&language=en-US&apiKey=${apiKey}&insightType=precipInsight&par=twc&geocode=${lat},${lon}`;
-    
-//     const response = await fetch(twcUrl);
-    
-//     if (!response.ok) {
-//       throw new Error(`TWC API responded with status: ${response.status}`);
-//     }
-
-//     const data = await response.json();
-//     res.json({ success: true, data: data });
-    
-//   } catch (error) {
-//     console.error('Error fetching precipitation insight:', error);
-//     res.status(500).json({ success: false, error: error.message });
-//   }
-// });
-
-// app.get('/api/precipitation-insight', async (req, res) => {
-//   try {
-//     const { lat, lon } = req.query;
-//     const apiKey = '71f92ea9dd2f4790b92ea9dd2f779061';
-    
-//     // Use your exact working Weather.com insights API URL
-//     const twcUrl = `https://api.weather.com/v3/insights?format=json&units=m&language=en-US&apiKey=${apiKey}&insightType=precipInsight&par=twc&geocode=${lat},${lon}`;
-    
-//     const response = await fetch(twcUrl);
-    
-//     if (!response.ok) {
-//       throw new Error(`TWC API responded with status: ${response.status}`);
-//     }
-
-//     const data = await response.json();
-//     res.json({ success: true, data: data });
-    
-//   } catch (error) {
-//     console.error('Error fetching precipitation insight:', error);
-//     res.status(500).json({ success: false, error: error.message });
-//   }
-// });
 
 app.get('/api/precipitation-insight', async (req, res) => {
   try {
