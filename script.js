@@ -339,7 +339,16 @@ function getWeatherIconPath(code) {
     44: "44 - Not Available (N_A).png", 45: "45 - Scattered Showers Night.png", 46: "46 - Scattered Snow Showers Night.png",
     47: "47 - Scattered Thunderstorms Night.png"
   };
-  return `${API_BASE}/icons/${icons[code] || "44 - Not Available (N_A).png"}`;
+  const filename = icons[code] || "44 - Not Available (N_A).png";
+  return `icons/${encodeURIComponent(filename)}`;
+}
+
+function preloadCommonWeatherIcons() {
+  const commonCodes = [26, 27, 28, 29, 30, 31, 32, 33, 34, 11, 12, 4, 37, 38, 20, 21, 44];
+  commonCodes.forEach(code => {
+    const img = new Image();
+    img.src = getWeatherIconPath(code);
+  });
 }
 
 function updateWeatherLocation(lat, lon, name) {
@@ -374,6 +383,7 @@ function updateWeatherLocation(lat, lon, name) {
 // --- INITIAL LOAD & RESTORE CACHE IMMEDIATELY ---
 
 function initInstantApp() {
+  preloadCommonWeatherIcons();
   try {
     const cCurrent = localStorage.getItem('nwf_cache_current');
     if (cCurrent) renderCachedCurrent(JSON.parse(cCurrent));
