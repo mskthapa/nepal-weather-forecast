@@ -106,25 +106,20 @@
   <div id="searchResultsDropdown" class="search-dropdown"></div>
 </div>
 
-  <!-- Empty spacer to keep search bar perfectly centered -->
-  <div style="width: 50px; flex-shrink: 0;"></div>
-
-</div>
-
 <!-- Top APK Available Banner -->
 <div class="apk-top-banner" id="apkTopBanner">
   <div class="apk-top-content">
     <span class="apk-top-icon"><i class="fa-brands fa-android"></i></span>
-    <div>
+    <div class="apk-top-text">
       <strong>Android App Available!</strong>
-      <span style="opacity: 0.85;"> Get real-time alerts & live forecast on your phone.</span>
+      <span class="apk-top-subtext"> Real-time alerts & live forecast on your phone.</span>
     </div>
   </div>
   <div class="apk-top-actions">
     <a href="nepal-weather-forecast.apk" download="NepalWeatherForecast.apk" class="apk-top-btn" title="Download APK directly">
-      <i class="fa-solid fa-download"></i> Download APK
+      <i class="fa-solid fa-download"></i> <span>Download APK</span>
     </a>
-    <button class="apk-top-close" title="Dismiss" onclick="document.getElementById('apkTopBanner').style.display='none';">&times;</button>
+    <button class="apk-top-close" title="Dismiss" aria-label="Dismiss banner" onclick="document.getElementById('apkTopBanner').style.display='none';">&times;</button>
   </div>
 </div>
 
@@ -286,6 +281,22 @@
 <!-- APK Download Showcase Section -->
 <section class="apk-showcase-section" id="apkDownloadSection">
   <div class="apk-showcase-grid">
+
+    <!-- App Preview Card (Reorders to top on mobile for instant recognition) -->
+    <div class="apk-card-preview">
+      <div class="apk-app-icon-wrap">
+        <img src="nwficon.png" alt="Nepal Weather Forecast App Icon" onerror="this.onerror=null; this.src='android-chrome-192x192.png';" />
+      </div>
+      <div class="apk-card-details">
+        <div class="apk-app-name">Nepal Weather Forecast</div>
+        <div class="apk-app-meta">Version 1.0 &bull; 8.18 MB &bull; Android 7.0+</div>
+        <div class="apk-app-badges">
+          <span class="apk-verified-badge"><i class="fa-solid fa-circle-check"></i> Clean & Verified Release</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Showcase Info -->
     <div class="apk-showcase-info">
       <div class="apk-badge">
         <i class="fa-brands fa-android"></i> Android Version Available
@@ -297,16 +308,16 @@
 
       <div class="apk-features-list">
         <div class="apk-feature-item">
-          <i class="fa-solid fa-bolt"></i> Real-time Rain Alerts
+          <i class="fa-solid fa-bolt"></i> <span>Real-time Rain Alerts</span>
         </div>
         <div class="apk-feature-item">
-          <i class="fa-solid fa-location-crosshairs"></i> Precise Nepal GPS
+          <i class="fa-solid fa-location-crosshairs"></i> <span>Precise Nepal GPS</span>
         </div>
         <div class="apk-feature-item">
-          <i class="fa-solid fa-gauge-high"></i> Lightweight (~8.2 MB)
+          <i class="fa-solid fa-gauge-high"></i> <span>Lightweight (8.2 MB)</span>
         </div>
         <div class="apk-feature-item">
-          <i class="fa-solid fa-shield-halved"></i> 100% Free & Safe APK
+          <i class="fa-solid fa-shield-halved"></i> <span>100% Free & Safe APK</span>
         </div>
       </div>
 
@@ -317,7 +328,7 @@
             <span class="apk-cta-sub">Direct Download (Free)</span>
             <span class="apk-cta-title">Download APK Now</span>
           </div>
-          <i class="fa-solid fa-download" style="font-size: 18px; margin-left: 6px;"></i>
+          <i class="fa-solid fa-download apk-cta-dl-icon"></i>
         </a>
 
         <button type="button" class="apk-guide-link" onclick="toggleInstallGuide()">
@@ -337,17 +348,6 @@
       </div>
     </div>
 
-    <!-- App Preview Card -->
-    <div class="apk-card-preview">
-      <div class="apk-app-icon-wrap">
-        <img src="nwficon.png" alt="Nepal Weather Forecast App Icon" onerror="this.onerror=null; this.src='android-chrome-192x192.png';" />
-      </div>
-      <div class="apk-app-name">Nepal Weather Forecast</div>
-      <div class="apk-app-meta">Version 1.0 &bull; 8.18 MB &bull; Android 7.0+</div>
-      <div class="apk-app-badges">
-        <span class="apk-verified-badge"><i class="fa-solid fa-circle-check"></i> Clean & Verified Release</span>
-      </div>
-    </div>
   </div>
 </section>
 
