@@ -111,6 +111,23 @@
 
 </div>
 
+<!-- Top APK Available Banner -->
+<div class="apk-top-banner" id="apkTopBanner">
+  <div class="apk-top-content">
+    <span class="apk-top-icon"><i class="fa-brands fa-android"></i></span>
+    <div>
+      <strong>Android App Available!</strong>
+      <span style="opacity: 0.85;"> Get real-time alerts & live forecast on your phone.</span>
+    </div>
+  </div>
+  <div class="apk-top-actions">
+    <a href="nepal-weather-forecast.apk" download="NepalWeatherForecast.apk" class="apk-top-btn" title="Download APK directly">
+      <i class="fa-solid fa-download"></i> Download APK
+    </a>
+    <button class="apk-top-close" title="Dismiss" onclick="document.getElementById('apkTopBanner').style.display='none';">&times;</button>
+  </div>
+</div>
+
 <section class="current-weather-section">
   <div class="location-header">
     <h1 id="locationTitle">Butwal</h1>
@@ -264,6 +281,74 @@
     <p id="metricMoonPhase">--</p>
   </div>
 
+</section>
+
+<!-- APK Download Showcase Section -->
+<section class="apk-showcase-section" id="apkDownloadSection">
+  <div class="apk-showcase-grid">
+    <div class="apk-showcase-info">
+      <div class="apk-badge">
+        <i class="fa-brands fa-android"></i> Android Version Available
+      </div>
+      <h2>Get Nepal Weather Forecast on Android</h2>
+      <p class="apk-showcase-desc">
+        Never get caught in the rain again. Download our official Android APK for lightning-fast live forecasts, real-time hourly rain probabilities, and extended 7-day outlooks across Nepal.
+      </p>
+
+      <div class="apk-features-list">
+        <div class="apk-feature-item">
+          <i class="fa-solid fa-bolt"></i> Real-time Rain Alerts
+        </div>
+        <div class="apk-feature-item">
+          <i class="fa-solid fa-location-crosshairs"></i> Precise Nepal GPS
+        </div>
+        <div class="apk-feature-item">
+          <i class="fa-solid fa-gauge-high"></i> Lightweight (~8.2 MB)
+        </div>
+        <div class="apk-feature-item">
+          <i class="fa-solid fa-shield-halved"></i> 100% Free & Safe APK
+        </div>
+      </div>
+
+      <div class="apk-action-group">
+        <a href="nepal-weather-forecast.apk" download="NepalWeatherForecast.apk" class="apk-download-cta" id="apkDownloadBtn" title="Download APK directly">
+          <i class="fa-brands fa-android apk-cta-icon"></i>
+          <div class="apk-cta-text">
+            <span class="apk-cta-sub">Direct Download (Free)</span>
+            <span class="apk-cta-title">Download APK Now</span>
+          </div>
+          <i class="fa-solid fa-download" style="font-size: 18px; margin-left: 6px;"></i>
+        </a>
+
+        <button type="button" class="apk-guide-link" onclick="toggleInstallGuide()">
+          <i class="fa-regular fa-circle-question"></i> How to install?
+        </button>
+      </div>
+
+      <!-- Quick Install Guide (Toggled by user) -->
+      <div id="apkInstallGuide" class="apk-install-guide" style="display: none;">
+        <h4><i class="fa-solid fa-circle-info"></i> How to install on your Android device:</h4>
+        <ol>
+          <li>Tap <strong>Download APK Now</strong> above to download the file directly to your phone.</li>
+          <li>If Chrome warns <em>"File might be harmful"</em>, tap <strong>"Download anyway"</strong> (this is standard for APKs outside the Play Store).</li>
+          <li>Open the notification or find <strong>NepalWeatherForecast.apk</strong> in your <em>Downloads</em> folder.</li>
+          <li>Tap <strong>Install</strong>. (If asked to allow unknown apps, toggle <em>"Allow from this source"</em>).</li>
+        </ol>
+      </div>
+    </div>
+
+    <!-- App Preview Card -->
+    <div class="apk-card-preview">
+      <div class="apk-app-icon-wrap">
+        <img src="nwficon.png" alt="Nepal Weather Forecast App Icon" onerror="this.onerror=null; this.src='android-chrome-192x192.png';" />
+      </div>
+      <div class="apk-app-name">Nepal Weather Forecast</div>
+      <div class="apk-app-meta">Version 1.0 &bull; 8.18 MB &bull; Android 7.0+</div>
+      <div class="apk-app-badges">
+        <span class="apk-verified-badge"><i class="fa-solid fa-circle-check"></i> Clean & Verified Release</span>
+      </div>
+    </div>
+  </div>
 </section>
 
 <footer class="site-footer">
