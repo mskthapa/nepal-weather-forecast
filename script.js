@@ -7,16 +7,24 @@ let currentLat = "27.7000", currentLon = "83.4500";
 function renderCachedCurrent(data) {
   if (!data) return;
   const setEl = (id, val) => { const el = document.getElementById(id); if (el && val !== undefined && val !== null) el.textContent = val; };
-  setEl("currentTemp", data.temperature);
-  setEl("currentCondition", data.condition);
-  setEl("feelsLike", data.feelsLike);
-  setEl("humidity", data.humidity);
-  setEl("uvIndex", data.uvIndex);
-  setEl("precipitation", data.precipChance || "0");
+  setEl("currentTemp", data.temperature !== undefined ? data.temperature : "--");
+  setEl("currentCondition", data.condition || "");
+  setEl("feelsLike", data.feelsLike !== undefined ? data.feelsLike : "--");
+  setEl("humidity", data.humidity !== undefined ? data.humidity : "--");
+  setEl("uvIndex", (data.uvIndex !== undefined && data.uvIndex !== null) ? data.uvIndex : "0");
+  setEl("precipitation", data.precipChance !== undefined ? data.precipChance : "0");
+
   if (data.cityName) {
     const locTitle = document.getElementById("locationTitle");
     if (locTitle) locTitle.textContent = data.cityName;
   }
+
+  const updateTimeEl = document.getElementById("updateTime");
+  if (updateTimeEl) {
+    const timeStr = new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit", hour12: true });
+    updateTimeEl.textContent = timeStr;
+  }
+
   if (data.iconCode !== undefined) {
     const iconPath = getWeatherIconPath(data.iconCode);
     window.currentWeatherIconUrl = iconPath;
@@ -28,23 +36,23 @@ function renderCachedCurrent(data) {
 function renderCachedMetrics(data) {
   if (!data) return;
   const setEl = (id, val) => { const el = document.getElementById(id); if (el && val !== undefined && val !== null) el.textContent = val; };
-  setEl("metricTemp", data.temperature ? `${data.temperature}°` : "");
+  setEl("metricTemp", data.temperature !== undefined ? `${data.temperature}°` : "");
   setEl("metricMaxMin", (data.tempMin !== undefined && data.tempMax !== undefined) ? `${data.tempMin}° / ${data.tempMax}°` : "");
-  setEl("metricFeelsLike", data.feelsLike ? `${data.feelsLike}°` : "");
-  setEl("metricWindSpeed", data.windSpeed ? `${data.windSpeed} km/h` : "");
+  setEl("metricFeelsLike", data.feelsLike !== undefined ? `${data.feelsLike}°` : "");
+  setEl("metricWindSpeed", data.windSpeed !== undefined ? `${data.windSpeed} km/h` : "");
   setEl("metricWindDir", data.windDirText || "");
-  setEl("metricHumidity", data.humidity ? `${data.humidity}%` : "");
-  setEl("metricUvIndex", data.uvIndex || "");
-  setEl("metricUvDesc", data.uvDescription || "");
-  setEl("metricAirQuality", data.airQuality || "");
-  setEl("metricDewPoint", data.dewPoint ? `${data.dewPoint}°` : "");
-  setEl("metricPressure", data.pressure ? `${data.pressure} mb` : "");
-  setEl("metricVisibility", data.visibility ? `${data.visibility} km` : "");
-  setEl("metricSunrise", data.sunrise || "");
-  setEl("metricSunset", data.sunset || "");
-  setEl("metricMoonrise", data.moonrise || "");
-  setEl("metricMoonset", data.moonset || "");
-  setEl("metricMoonPhase", data.moonPhase || "");
+  setEl("metricHumidity", data.humidity !== undefined ? `${data.humidity}%` : "");
+  setEl("metricUvIndex", (data.uvIndex !== undefined && data.uvIndex !== null) ? data.uvIndex : "0");
+  setEl("metricUvDesc", data.uvDescription || "Low");
+  setEl("metricAirQuality", (data.airQuality !== undefined && data.airQuality !== null) ? data.airQuality : "--");
+  setEl("metricDewPoint", data.dewPoint !== undefined ? `${data.dewPoint}°` : "");
+  setEl("metricPressure", data.pressure !== undefined ? `${data.pressure} mb` : "");
+  setEl("metricVisibility", data.visibility !== undefined ? `${data.visibility} km` : "");
+  setEl("metricSunrise", data.sunrise || "--");
+  setEl("metricSunset", data.sunset || "--");
+  setEl("metricMoonrise", data.moonrise || "--");
+  setEl("metricMoonset", data.moonset || "--");
+  setEl("metricMoonPhase", data.moonPhase || "--");
 }
 
 function renderCachedHourly(list) {
@@ -183,7 +191,7 @@ async function loadCurrentWeather(lat, lon) {
       fetch(`${API_BASE}/api/hourly-rain?lat=${n}&lon=${r}`).catch(() => null)
     ]);
     if (!weatherRes.ok) return;
-    const json = await weatherRes.data ? weatherRes : await weatherRes.json();
+    const json = await weatherRes.json();
     if (json.success && json.data) {
       const data = json.data;
       if (rainRes && rainRes.ok) {

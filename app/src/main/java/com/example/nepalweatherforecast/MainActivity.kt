@@ -68,8 +68,8 @@ class MainActivity : ComponentActivity() {
 
         // Pre-store default fallback weather data if empty so the app loads numbers in 0.01 seconds
         if (!prefs.contains("nwf_cache_current")) {
-            val defaultCurrent = """{"cityName":"Kathmandu","region":"Nepal","temperature":24,"feelsLike":25,"condition":"Partly Cloudy","humidity":62,"precipChance":20,"uvIndex":5,"iconCode":30}"""
-            val defaultMetrics = """{"temperature":24,"tempMax":28,"tempMin":16,"feelsLike":25,"windSpeed":8,"windDirText":"NW","humidity":62,"uvIndex":5,"uvDescription":"Moderate","dewPoint":16,"pressure":1014,"visibility":10,"airQuality":65,"sunrise":"6:12 AM","sunset":"6:05 PM","moonrise":"2:10 PM","moonset":"1:15 AM","moonPhase":"Waxing Gibbous"}"""
+            val defaultCurrent = """{"cityName":"Lumbini Province, Nepal","region":"Nepal","temperature":29,"feelsLike":34,"condition":"Fair","humidity":76,"precipChance":4,"uvIndex":0,"iconCode":30}"""
+            val defaultMetrics = """{"temperature":29,"tempMax":32,"tempMin":25,"feelsLike":34,"windSpeed":11,"windDirText":"N","humidity":76,"uvIndex":0,"uvDescription":"Low","dewPoint":24,"pressure":1010.42,"visibility":6,"airQuality":106,"sunrise":"6:03 AM","sunset":"5:57 PM","moonrise":"9:11 PM","moonset":"10:47 AM","moonPhase":"Waning Gibbous"}"""
             prefs.edit()
                 .putString("nwf_cache_current", defaultCurrent)
                 .putString("nwf_cache_metrics", defaultMetrics)
@@ -197,6 +197,12 @@ fun WeatherAppContent(
                                 val js = """
                                     (function() {
                                         try {
+                                            var timeEl = document.getElementById('updateTime');
+                                            if (timeEl) {
+                                                var now = new Date();
+                                                timeEl.textContent = now.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true });
+                                            }
+
                                             if ('$curJson' !== '') {
                                                 var curData = '$curJson';
                                                 var parsed = JSON.parse(curData);

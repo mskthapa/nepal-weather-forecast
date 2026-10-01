@@ -74,4 +74,4 @@ tasks.register<Copy>("copyReleaseApkToRoot") {
 
 tasks.matching { it.name == "assembleRelease" }.configureEach {
     finalizedBy("copyReleaseApkToRoot")
-}
+}
