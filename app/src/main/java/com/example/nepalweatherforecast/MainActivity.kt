@@ -1,6 +1,7 @@
 package com.example.nepalweatherforecast
 
 import android.Manifest
+import android.content.Context
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.os.Bundle
@@ -63,23 +64,39 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
-        // Wake up / Pre-warm Render backend endpoints instantly on app start
-        val apiEndpoints = listOf(
-            "https://nepal-weather-forecast-backend.onrender.com/api/current-weather?lat=27.7000&lon=83.4500",
-            "https://nepal-weather-forecast-backend.onrender.com/api/hourly-forecast?lat=27.7000&lon=83.4500",
-            "https://nepal-weather-forecast-backend.onrender.com/api/daily-forecast?lat=27.7000&lon=83.4500",
-            "https://nepal-weather-forecast-backend.onrender.com/api/weather-metrics?lat=27.7000&lon=83.4500"
+        val prefs = getSharedPreferences("nwf_weather_prefs", MODE_PRIVATE)
+
+        // Pre-store default fallback weather data if empty so the app loads numbers in 0.01 seconds
+        if (!prefs.contains("nwf_cache_current")) {
+            val defaultCurrent = """{"cityName":"Kathmandu","region":"Nepal","temperature":24,"feelsLike":25,"condition":"Partly Cloudy","humidity":62,"precipChance":20,"uvIndex":5,"iconCode":30}"""
+            val defaultMetrics = """{"temperature":24,"tempMax":28,"tempMin":16,"feelsLike":25,"windSpeed":8,"windDirText":"NW","humidity":62,"uvIndex":5,"uvDescription":"Moderate","dewPoint":16,"pressure":1014,"visibility":10,"airQuality":65,"sunrise":"6:12 AM","sunset":"6:05 PM","moonrise":"2:10 PM","moonset":"1:15 AM","moonPhase":"Waxing Gibbous"}"""
+            prefs.edit()
+                .putString("nwf_cache_current", defaultCurrent)
+                .putString("nwf_cache_metrics", defaultMetrics)
+                .apply()
+        }
+
+        // Wake up Render backend & fetch fresh weather data natively in parallel
+        val endpoints = mapOf(
+            "nwf_cache_current" to "https://nepal-weather-forecast-backend.onrender.com/api/current-weather?lat=27.7000&lon=83.4500",
+            "nwf_cache_hourly" to "https://nepal-weather-forecast-backend.onrender.com/api/hourly-forecast?lat=27.7000&lon=83.4500",
+            "nwf_cache_daily" to "https://nepal-weather-forecast-backend.onrender.com/api/daily-forecast?lat=27.7000&lon=83.4500",
+            "nwf_cache_metrics" to "https://nepal-weather-forecast-backend.onrender.com/api/weather-metrics?lat=27.7000&lon=83.4500"
         )
 
-        for (endpoint in apiEndpoints) {
+        for ((key, urlStr) in endpoints) {
             thread {
                 try {
-                    val url = URL(endpoint)
-                    val conn = url.openConnection() as HttpURLConnection
+                    val conn = URL(urlStr).openConnection() as HttpURLConnection
                     conn.connectTimeout = 8000
                     conn.readTimeout = 8000
                     conn.requestMethod = "GET"
-                    conn.connect()
+                    if (conn.responseCode == 200) {
+                        val text = conn.inputStream.bufferedReader().use { it.readText() }
+                        if (text.contains("\"success\":true")) {
+                            prefs.edit().putString(key, text).apply()
+                        }
+                    }
                     conn.inputStream.close()
                 } catch (_: Exception) {}
             }
@@ -125,89 +142,11 @@ fun WeatherAppContent(
         webView?.goBack()
     }
 
-    // Hide splash screen overlay after max 1.8 seconds so user sees UI/cache immediately
+    // Hide splash overlay quickly (0.8s) so user sees instantly cached UI
     LaunchedEffect(Unit) {
-        delay(1800)
+        delay(800)
         isLoading = false
     }
-
-    // JavaScript injection to enable instant local storage caching & fast rendering
-    val instantCacheScript = """
-        (function() {
-            try {
-                // Restore cached current weather instantly
-                var cur = localStorage.getItem('nwf_cache_current');
-                if (cur) {
-                    var data = JSON.parse(cur);
-                    if (data) {
-                        if (data.cityName && document.getElementById('locationTitle')) {
-                            document.getElementById('locationTitle').textContent = data.cityName;
-                        }
-                        if (data.temperature && document.getElementById('currentTemp')) {
-                            document.getElementById('currentTemp').textContent = data.temperature;
-                        }
-                        if (data.condition && document.getElementById('currentCondition')) {
-                            document.getElementById('currentCondition').textContent = data.condition;
-                        }
-                        if (data.feelsLike && document.getElementById('feelsLike')) {
-                            document.getElementById('feelsLike').textContent = data.feelsLike;
-                        }
-                        if (data.humidity && document.getElementById('humidity')) {
-                            document.getElementById('humidity').textContent = data.humidity;
-                        }
-                    }
-                }
-
-                // Restore cached metrics instantly
-                var met = localStorage.getItem('nwf_cache_metrics');
-                if (met) {
-                    var m = JSON.parse(met);
-                    if (m) {
-                        var setVal = function(id, val) {
-                            var el = document.getElementById(id);
-                            if (el && val !== undefined && val !== null) el.textContent = val;
-                        };
-                        setVal('metricTemp', m.temperature ? m.temperature + '°' : '');
-                        setVal('metricFeelsLike', m.feelsLike ? m.feelsLike + '°' : '');
-                        setVal('metricWindSpeed', m.windSpeed ? m.windSpeed + ' km/h' : '');
-                        setVal('metricWindDir', m.windDirText || '');
-                        setVal('metricHumidity', m.humidity ? m.humidity + '%' : '');
-                        setVal('metricUvIndex', m.uvIndex || '');
-                        setVal('metricAirQuality', m.airQuality || '');
-                        setVal('metricSunrise', m.sunrise || '');
-                        setVal('metricSunset', m.sunset || '');
-                        setVal('metricMoonrise', m.moonrise || '');
-                        setVal('metricMoonset', m.moonset || '');
-                        setVal('metricMoonPhase', m.moonPhase || '');
-                    }
-                }
-            } catch(e) {}
-
-            // Intercept fetch to store successful API responses in localStorage
-            if (!window.__nwf_fetch_intercepted) {
-                window.__nwf_fetch_intercepted = true;
-                var origFetch = window.fetch;
-                window.fetch = function() {
-                    var url = arguments[0];
-                    return origFetch.apply(this, arguments).then(function(resp) {
-                        if (resp && resp.ok && typeof url === 'string') {
-                            var clone = resp.clone();
-                            clone.json().then(function(json) {
-                                if (json && json.success && json.data) {
-                                    if (url.indexOf('/api/current-weather') !== -1) {
-                                        localStorage.setItem('nwf_cache_current', JSON.stringify(json.data));
-                                    } else if (url.indexOf('/api/weather-metrics') !== -1) {
-                                        localStorage.setItem('nwf_cache_metrics', JSON.stringify(json.data));
-                                    }
-                                }
-                            }).catch(function(){});
-                        }
-                        return resp;
-                    });
-                };
-            }
-        })();
-    """.trimIndent()
 
     Scaffold(
         modifier = Modifier
@@ -220,12 +159,13 @@ fun WeatherAppContent(
                 .padding(innerPadding)
                 .background(appBackgroundColor)
         ) {
-            // SwipeRefreshLayout wrapping WebView
             AndroidView(
                 factory = { context ->
                     SwipeRefreshLayout(context).apply {
                         setColorSchemeColors(android.graphics.Color.parseColor("#3B82F6"))
                         setProgressBackgroundColorSchemeColor(android.graphics.Color.parseColor("#1E293B"))
+
+                        val prefs = context.getSharedPreferences("nwf_weather_prefs", Context.MODE_PRIVATE)
 
                         val wv = WebView(context).apply {
                             layoutParams = ViewGroup.LayoutParams(
@@ -248,41 +188,60 @@ fun WeatherAppContent(
                                 allowContentAccess = true
                             }
 
+                            val injectCache = {
+                                val curJson = prefs.getString("nwf_cache_current", "") ?: ""
+                                val metJson = prefs.getString("nwf_cache_metrics", "") ?: ""
+                                val hrlJson = prefs.getString("nwf_cache_hourly", "") ?: ""
+                                val dayJson = prefs.getString("nwf_cache_daily", "") ?: ""
+
+                                val js = """
+                                    (function() {
+                                        try {
+                                            if ('$curJson' !== '') {
+                                                var curData = '$curJson';
+                                                var parsed = JSON.parse(curData);
+                                                var d = parsed.data || parsed;
+                                                localStorage.setItem('nwf_cache_current', JSON.stringify(d));
+                                                if (typeof renderCachedCurrent === 'function') renderCachedCurrent(d);
+                                            }
+                                            if ('$metJson' !== '') {
+                                                var metData = '$metJson';
+                                                var parsedM = JSON.parse(metData);
+                                                var m = parsedM.data || parsedM;
+                                                localStorage.setItem('nwf_cache_metrics', JSON.stringify(m));
+                                                if (typeof renderCachedMetrics === 'function') renderCachedMetrics(m);
+                                            }
+                                            if ('$hrlJson' !== '') {
+                                                var hrlData = '$hrlJson';
+                                                var parsedH = JSON.parse(hrlData);
+                                                var h = parsedH.data || parsedH;
+                                                localStorage.setItem('nwf_cache_hourly', JSON.stringify(h));
+                                                if (typeof renderCachedHourly === 'function') renderCachedHourly(h);
+                                            }
+                                            if ('$dayJson' !== '') {
+                                                var dayData = '$dayJson';
+                                                var parsedD = JSON.parse(dayData);
+                                                var dy = parsedD.data || parsedD;
+                                                localStorage.setItem('nwf_cache_daily', JSON.stringify(dy));
+                                                if (typeof renderCachedDaily === 'function') renderCachedDaily(dy);
+                                            }
+                                        } catch(e) {}
+                                    })();
+                                """.trimIndent()
+                                evaluateJavascript(js, null)
+                            }
+
                             webViewClient = object : WebViewClient() {
                                 override fun onPageStarted(view: WebView?, url: String?, favicon: Bitmap?) {
                                     super.onPageStarted(view, url, favicon)
                                     canGoBack = view?.canGoBack() == true
-                                    view?.evaluateJavascript(instantCacheScript, null)
+                                    injectCache()
                                 }
 
                                 override fun onPageFinished(view: WebView?, url: String?) {
                                     super.onPageFinished(view, url)
                                     canGoBack = view?.canGoBack() == true
-                                    view?.evaluateJavascript(instantCacheScript, null)
-
-                                    // Automatic background polling if server was cold-starting
-                                    view?.evaluateJavascript(
-                                        """
-                                        (function() {
-                                            var retries = 0;
-                                            var timer = setInterval(function() {
-                                                var tempEl = document.getElementById('currentTemp');
-                                                if (tempEl && (tempEl.textContent === '--' || tempEl.textContent === '' || tempEl.textContent.indexOf('28') !== -1)) {
-                                                    if (typeof loadCurrentWeather === 'function') loadCurrentWeather();
-                                                    if (typeof loadHourlyForecast === 'function') loadHourlyForecast();
-                                                    if (typeof loadDailyForecast === 'function') loadDailyForecast();
-                                                    if (typeof loadWeatherMetrics === 'function') loadWeatherMetrics();
-                                                } else {
-                                                    clearInterval(timer);
-                                                }
-                                                retries++;
-                                                if (retries > 6) clearInterval(timer);
-                                            }, 1200);
-                                        })();
-                                        """.trimIndent(),
-                                        null
-                                    )
-
+                                    injectCache()
                                     isLoading = false
                                     isRefreshing = false
                                 }

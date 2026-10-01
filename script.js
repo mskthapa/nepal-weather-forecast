@@ -1,34 +1,459 @@
-const rawApiBase="localhost"===window.location.hostname||"127.0.0.1"===window.location.hostname?"http://localhost:5000":"https://nepal-weather-forecast-backend.onrender.com",API_BASE=rawApiBase.replace(/\/+$/,"");let currentLat="27.7000",currentLon="83.4500";async function loadHourlyForecast(e,t){try{let n=void 0!==e?e:currentLat,r=void 0!==t?t:currentLon,a=await fetch(`${API_BASE}/api/hourly-forecast?lat=${n}&lon=${r}`),o=await a.json();if(o.success&&o.data){let i=Array.isArray(o.data)?o.data:o.data.hourly||Object.values(o.data)[0];if(Array.isArray(i)&&i.length>0){window.latestHourlyData=i;let c=document.getElementById("hourlyForecast");if(!c)return;c.innerHTML="";let l=void 0!==i[0].temperature?i[0].temperature:void 0!==i[0].temp?i[0].temp:null,s=null!==l?`${l}\xb0C`:"28\xb0C",d=i[0].precipChance??i[0].pop??i[0].precip??0,p=Math.round(parseInt(String(d).replace(/[^0-9]/g,""),10)||0),u=p>0?`<div class="precip-badge"><span class="drop-icon">💧</span>${p}%</div>`:"",h=i[0],g=h.iconCode??h.wxIcon??h.icon??h.weatherIcon??h.icon_code??h.wx_icon,m="";"function"==typeof getWeatherIconPath&&null!=g&&(m=getWeatherIconPath(g));let y=document.querySelector('.hero-card img, .current-card img, .top-card img, #topWeatherIcon, #currentWeatherIcon, .top-right-icon, [class*="current"] img'),$="";if(y&&y.src&&y.src.startsWith("http")&&!y.src.includes("undefined")?$=y.src:window.currentWeatherIconUrl&&window.currentWeatherIconUrl.startsWith("http")&&!window.currentWeatherIconUrl.includes("undefined")?$=window.currentWeatherIconUrl:m&&!m.includes("undefined")&&($=m),!$||$.includes("undefined")){let L=i[1]?.iconCode??i[1]?.wxIcon??i[1]?.icon;$="function"==typeof getWeatherIconPath?getWeatherIconPath(L):""}let w=document.createElement("div");w.className="hourly-card",w.innerHTML=`
-          <p class="time"><strong>Now</strong></p>
-          <img id="nowHourlyIcon" src="${$}" alt="Weather Icon" class="forecast-icon" width="40" height="40" onerror="this.onerror=null; if(window.currentWeatherIconUrl) this.src=window.currentWeatherIconUrl;">
-          <p class="temp">${s}</p>
-          ${u}
-        `,c.appendChild(w);let I=new Date;I.setMinutes(0,0,0),I.setHours(I.getHours()+1),i.forEach((e,t)=>{if(0===t)return;let n=void 0!==e.temperature?e.temperature:void 0!==e.temp?e.temp:"--",r=e.iconCode||e.wxIcon||e.icon||e.weatherIcon||e.icon_code,a=e.precipChance??e.pop??e.precip??0,o=Math.round(parseInt(String(a).replace(/[^0-9]/g,""),10)||0),i=o>0?`<div class="precip-badge"><span class="drop-icon">💧</span>${o}%</div>`:"",l=new Date(I.getTime()+(t-1)*36e5),s=l.toLocaleTimeString([],{hour:"numeric",hour12:!0}),d=getWeatherIconPath(r),p=document.createElement("div");p.className="hourly-card",p.innerHTML=`
-            <p class="time"><strong>${s}</strong></p>
-            <img src="${d}" alt="Weather Icon" class="forecast-icon" width="40" height="40">
-            <p class="temp">${n}\xb0C</p>
-            ${i}
-          `,c.appendChild(p)})}}}catch(f){console.error("Failed to load hourly forecast:",f)}}async function loadDailyForecast(e,t){try{let n=void 0!==e?e:currentLat,r=void 0!==t?t:currentLon,a=await fetch(`${API_BASE}/api/daily-forecast?lat=${n}&lon=${r}`),o=await a.json();if(o.success){let i=document.getElementById("dailyForecast");if(!i)return;i.innerHTML="",o.data.forEach(e=>{let t=getWeatherIconPath(e.iconCode),n=0,r=[e.precipChance,e.dayPrecipChance,e.nightPrecipChance,e.precipChanceNight,e.precipChanceDay,e.pop,e.precip,e.day?.precipChance,e.night?.precipChance];for(let a of r)if(null!=a){let o=parseInt(String(a).replace(/[^0-9]/g,""),10);if(!isNaN(o)&&o>0){n=o;break}}if(0===n){let c=(e.condition||"").toLowerCase();if(c.includes("rain")||c.includes("shower")||c.includes("thunder")||c.includes("drizzle")){if(Array.isArray(window.latestHourlyData)&&window.latestHourlyData.length>0){let l=Math.max(...window.latestHourlyData.slice(0,12).map(e=>{let t=e.precipChance??e.pop??e.precip??0;return parseInt(String(t).replace(/[^0-9]/g,""),10)||0}));l>0&&(n=l)}0===n&&(n=35)}}let s=n>0?`<div class="precip-badge"><span class="drop-icon">💧</span>${n}%</div>`:"",d=document.createElement("div");d.className="daily-card",d.innerHTML=`
-          <p class="day-name"><strong>${e.day}</strong></p>
-          <img src="${t}" alt="Weather Icon" class="forecast-icon" width="40" height="40">
-          <p class="temps">High: ${e.tempMax}\xb0C | Low: ${e.tempMin}\xb0C</p>
-          <p class="condition-text">${e.condition}</p>
-          ${s}
-        `,i.appendChild(d)})}}catch(c){console.error("Failed to load daily forecast:",c)}}async function loadPrecipitationInsight(e,t){let n=document.getElementById("rainChartSection")||document.querySelector(".precipitation-section");if(n)try{let r=void 0!==e?e:void 0!==currentLat?currentLat:"27.714",a=void 0!==t?t:void 0!==currentLon?currentLon:"85.311",[o,i]=await Promise.all([fetch(`${API_BASE}/api/precipitation-insight?lat=${r}&lon=${a}`).catch(()=>null),fetch(`${API_BASE}/api/hourly-rain?lat=${r}&lon=${a}`).catch(()=>null)]),c=!1,l="";if(i&&i.ok){let s=await i.json();if(s.success&&Array.isArray(s.data)){let d=s.data.slice(0,3);c=d.some(e=>{let t=void 0!==e.precipChance?e.precipChance:void 0!==e.pop?e.pop:0;return e.qpf>0||t>=40})}}if(!c){n.style.display="none";return}if(o&&o.ok){let p=await o.json();if(p.success&&p.data){let u=Array.isArray(p.data)?p.data[0]:p.data;u?.insightTextLong&&(l=Array.isArray(u.insightTextLong)?u.insightTextLong[0]:u.insightTextLong)}}let h=l.toLowerCase(),g=h.includes("no rain")||h.includes("no precipitation")||h.includes("dry")||h.includes("clear");if(g){n.style.display="none";return}let m=document.getElementById("rainOutlookText");m&&l&&(m.innerText=l)}catch(y){console.error("Failed to load precipitation insight:",y),n&&(n.style.display="none")}}async function loadCurrentWeather(e,t){try{let n=void 0!==e?e:currentLat,r=void 0!==t?t:currentLon,[a,o]=await Promise.all([fetch(`${API_BASE}/api/current-weather?lat=${n}&lon=${r}`),fetch(`${API_BASE}/api/hourly-rain?lat=${n}&lon=${r}`)]);if(!a.ok)return;let i=await a.json();if(i.success&&i.data){let c=i.data,l=(e,t)=>{let n=document.getElementById(e);n&&(n.textContent=t)},s=c.cityName||c.location||c.address||c.placeName;if(s){let d=document.getElementById("locationTitle");d&&(d.textContent=s)}let p=c.region||c.state||c.country||"",u=document.getElementById("locationSub"),h=new Date().toLocaleTimeString([],{hour:"numeric",minute:"2-digit",hour12:!0});if(u){let g=p?`${p} &bull; As of `:"As of ";u.innerHTML=`${g}<span id="updateTime">${h}</span>`}l("currentTemp",c.temperature),l("currentCondition",c.condition),l("feelsLike",c.feelsLike),l("humidity",c.humidity),l("uvIndex",c.uvIndex);let m=void 0!==c.precipChance?c.precipChance:0;if((!m||0===m||"0"===m)&&o.ok){let y=await o.json();if(y.success&&Array.isArray(y.data)&&y.data.length>0){let $=y.data[0];m=void 0!==$.precipChance?$.precipChance:void 0!==$.pop?$.pop:0}}l("precipitation",`${m}`);let L=getWeatherIconPath(c.iconCode);window.currentWeatherIconUrl=L;let w=document.getElementById("currentWeatherIcon");w&&(w.src=L);let I=document.getElementById("nowHourlyIcon")||document.querySelector("#hourlyForecast .hourly-card:first-child img");I&&(I.src=L)}}catch(f){console.error("Failed to load current weather:",f)}}async function loadInsights(e,t){try{let n=void 0!==e?e:currentLat,r=void 0!==t?t:currentLon,a=await fetch(`${API_BASE}/api/insights?lat=${n}&lon=${r}`),o=await a.json();if(o.success){let i=document.getElementById("weatherInsight");i&&(i.innerHTML=`<p>${o.insight}</p>`)}}catch(c){console.error("Failed to load insights:",c)}}function getWeatherIconPath(e){return`${API_BASE}/icons/${({0:"0 - Tornado.png",1:"1 - Tropical Storm.png",2:"2 - Hurricane.png",3:"3 - Strong Storms.png",4:"4 - Thunderstorms.png",5:"5 - Rain _ Snow.png",6:"6 - Rain _ Sleet.png",7:"7 - Wintry Mix.png",8:"8 - Freezing Drizzle.png",9:"9 - Drizzle.png",10:"10 - Freezing Rain.png",11:"11 - Showers.png",12:"12 - Rain.png",13:"13 - Flurries.png",14:"14 - Snow Showers.png",15:"15 - Blowing _ Drifting Snow.png",16:"16 - Snow.png",17:"17 - Hail.png",18:"18 - Sleet.png",19:"19 - Blowing Dust _ Sandstorm.png",20:"20 - Foggy.png",21:"21 - Haze.png",22:"22 - Smoke.png",23:"23 - Breezy.png",24:"24 - Windy.png",25:"25 - Frigid _ Ice Crystals.png",26:"26 - Cloudy.png",27:"27 - Mostly Cloudy Night.png",28:"28 - Mostly Cloudy Day.png",29:"29 - Partly Cloudy Night.png",30:"30 - Partly Cloudy Day.png",31:"31 - Clear.png",32:"32 - Sunny.png",33:"33 - Fair _ Mostly Clear.png",34:"34 - Fair _ Mostly Sunny.png",35:"35 - Mixed Rain and Hail.png",36:"36 - Hot.png",37:"37 - Isolated Thunderstorms.png",38:"38 - Scattered Thunderstorms Day.png",39:"39 - Scattered Showers Day.png",40:"40 - Heavy Rain.png",41:"41 - Scattered Snow Showers Day.png",42:"42 - Heavy Snow.png",43:"43 - Blizzard.png",44:"44 - Not Available (N_A).png",45:"45 - Scattered Showers Night.png",46:"46 - Scattered Snow Showers Night.png",47:"47 - Scattered Thunderstorms Night.png"})[e]||"44 - Not Available (N_A).png"}`}async function loadWeatherMetrics(e,t){try{let n=e??(void 0!==currentLat?currentLat:"27.714"),r=t??(void 0!==currentLon?currentLon:"85.311");console.log(`[Metrics] Fetching from: ${API_BASE}/api/weather-metrics?lat=${n}&lon=${r}`);let a=await fetch(`${API_BASE}/api/weather-metrics?lat=${n}&lon=${r}`);if(!a.ok){console.error(`[Metrics Error] HTTP status: ${a.status}`);return}let o=await a.json();if(console.log("[Metrics Success] Received data from backend:",o),o.success&&o.data){let i=o.data,c=(e,t)=>{let n=document.getElementById(e);n?n.textContent=null!=t&&""!==t?t:"--":console.warn(`[UI Warning] HTML element with id="${e}" not found in DOM.`)};c("metricTemp",`${i.temperature}\xb0`),c("metricMaxMin",`${i.tempMin}\xb0 / ${i.tempMax}\xb0`),c("metricFeelsLike",`${i.feelsLike}\xb0`),c("metricWindSpeed",`${i.windSpeed} km/h`),c("metricWindDir",i.windDirText),c("metricHumidity",`${i.humidity}%`),c("metricUvIndex",i.uvIndex),c("metricUvDesc",i.uvDescription),c("metricAirQuality",i.airQuality),c("metricDewPoint",`${i.dewPoint}\xb0`),c("metricPressure",`${i.pressure} mb`),c("metricVisibility",`${i.visibility} km`),c("metricSunrise",i.sunrise),c("metricSunset",i.sunset),c("metricMoonrise",i.moonrise),c("metricMoonset",i.moonset),c("metricMoonPhase",i.moonPhase)}}catch(l){console.error("[Metrics Error] Failed to load weather metrics:",l)}}async function loadRainChart(e,t){let n=document.getElementById("rainChartSection"),r=document.getElementById("rainChart");n&&(n.style.display="none");try{let a=void 0!==e?e:void 0!==currentLat?currentLat:"27.714",o=void 0!==t?t:void 0!==currentLon?currentLon:"85.311",i=await fetch(`${API_BASE}/api/hourly-rain?lat=${a}&lon=${o}`);if(!i.ok){n&&(n.style.display="none");return}let c=await i.json(),l=Array.isArray(c?.data)?c.data:Array.isArray(c)?c:[];if(!c.success||0===l.length){n&&(n.style.display="none");return}let s=l.slice(0,3),d=s.some(e=>{if(!e)return!1;let t=e.precipChance??e.pop??e.precip??0,n=e.qpf??e.amount??0;return Number(t)>=40||Number(n)>0});if(!d){n&&(n.style.display="none");return}if(!r){console.warn('[Rain Chart] Element id="rainChart" not found in DOM.'),n&&(n.style.display="none");return}r.innerHTML="";let p=new Date;p.setMinutes(0,0,0),p.setHours(p.getHours()+1),l.forEach((e,t)=>{if(!e)return;let n=new Date(p.getTime()+36e5*t),a=n.toLocaleTimeString([],{hour:"numeric",hour12:!0}).toLowerCase(),o=Number(e.precipChance??e.pop??e.precip??0),i=document.createElement("div");i.className="rain-bar-col",i.innerHTML=`
-        <div class="bar-wrapper">
-          <div class="bar" style="height: ${Math.max(Math.min(o,100),10)}%;"></div>
-        </div>
-        <span class="time-label">${a}</span>
-      `,r.appendChild(i)}),n&&(n.style.display="block")}catch(u){console.error("Failed to load rain chart:",u),n&&(n.style.display="none")}}function updateWeatherLocation(e,t,n){localStorage.setItem("savedLat",e),localStorage.setItem("savedLon",t),localStorage.setItem("savedLocationName",n),currentLat=e,currentLon=t;let r=n.indexOf(","),a=n,o="";-1!==r&&(a=n.substring(0,r).trim(),o=n.substring(r+1).trim());let i=document.getElementById("locationTitle");i&&(i.textContent=a);let c=document.getElementById("locationSub"),l=new Date().toLocaleTimeString([],{hour:"numeric",minute:"2-digit",hour12:!0});c&&(c.innerHTML=`${o} &bull; As of <span id="updateTime">${l}</span>`),loadCurrentWeather(e,t),loadHourlyForecast(e,t),loadDailyForecast(e,t),loadWeatherMetrics(e,t),loadRainChart(e,t),loadInsights(e,t),loadPrecipitationInsight(e,t)}document.addEventListener("DOMContentLoaded",()=>{loadWeatherMetrics()}),window.addEventListener("DOMContentLoaded",()=>{let e=localStorage.getItem("savedLat"),t=localStorage.getItem("savedLon"),n=localStorage.getItem("savedLocationName");if(e&&t){currentLat=e,currentLon=t;let r=n||"Saved Location";updateWeatherLocation(e,t,r)}else loadCurrentWeather(currentLat,currentLon),loadHourlyForecast(currentLat,currentLon),loadDailyForecast(currentLat,currentLon),loadWeatherMetrics(currentLat,currentLon),loadRainChart(currentLat,currentLon),loadInsights(currentLat,currentLon),loadPrecipitationInsight(currentLat,currentLon)});const searchInput=document.getElementById("locationSearchInput"),dropdown=document.getElementById("searchResultsDropdown");let searchTimeout;function requestUserLocation(){if(console.log("\uD83D\uDCCD requestUserLocation function triggered!"),!navigator.geolocation){alert("Geolocation is not supported by your browser.");return}navigator.geolocation.getCurrentPosition(async e=>{let t=e.coords.latitude,n=e.coords.longitude;currentLat=t,currentLon=n,loadCurrentWeather(t,n),loadHourlyForecast(t,n),loadDailyForecast(t,n),loadWeatherMetrics(t,n),loadRainChart(t,n),loadInsights(t,n),loadPrecipitationInsight(t,n)},e=>{switch(console.warn("⚠️ Geolocation error:",e.message),e.code){case e.PERMISSION_DENIED:alert("Location permission denied. Please allow location access in your browser settings.");break;case e.POSITION_UNAVAILABLE:alert("Location information is unavailable.");break;case e.TIMEOUT:alert("The request to fetch your location timed out.");break;default:alert("An unknown error occurred.")}},{timeout:1e4,enableHighAccuracy:!0})}function resetToDefaultLocation(){localStorage.removeItem("savedLat"),localStorage.removeItem("savedLon"),localStorage.removeItem("savedLocationName"),updateWeatherLocation(currentLat="27.7000",currentLon="83.4500","Butwal, Nepal")}searchInput&&searchInput.addEventListener("input",e=>{clearTimeout(searchTimeout);let t=e.target.value.trim();if(t.length<2){dropdown&&(dropdown.innerHTML="",dropdown.style.display="none");return}searchTimeout=setTimeout(async()=>{try{let e=await fetch(`${API_BASE}/api/search-locations?q=${encodeURIComponent(t)}`),n=await e.json();n.success&&n.data.length>0?(dropdown.innerHTML="",dropdown.style.display="block",n.data.forEach(e=>{let t=document.createElement("div");t.className="search-item",t.textContent=e.name,t.addEventListener("click",()=>{searchInput.value="",dropdown.style.display="none",updateWeatherLocation(e.lat,e.lon,e.name)}),dropdown.appendChild(t)})):(dropdown.innerHTML='<div class="search-item">No locations found in Nepal</div>',dropdown.style.display="block")}catch(r){console.error("Search failed:",r)}},600)});const homeTitleEl=document.getElementById("homeTitle");homeTitleEl&&homeTitleEl.addEventListener("click",resetToDefaultLocation);const homeLogoEl=document.getElementById("homeLogo");homeLogoEl&&homeLogoEl.addEventListener("click",resetToDefaultLocation);
+const rawApiBase = "localhost" === window.location.hostname || "127.0.0.1" === window.location.hostname ? "http://localhost:5000" : "https://nepal-weather-forecast-backend.onrender.com";
+const API_BASE = rawApiBase.replace(/\/+$/, "");
+let currentLat = "27.7000", currentLon = "83.4500";
 
-function toggleInstallGuide() {
-  const guide = document.getElementById("apkInstallGuide");
-  if (!guide) return;
-  const isHidden = guide.style.display === "none" || guide.style.display === "";
-  guide.style.display = isHidden ? "block" : "none";
+// --- INSTANT CACHE RENDERERS ---
+
+function renderCachedCurrent(data) {
+  if (!data) return;
+  const setEl = (id, val) => { const el = document.getElementById(id); if (el && val !== undefined && val !== null) el.textContent = val; };
+  setEl("currentTemp", data.temperature);
+  setEl("currentCondition", data.condition);
+  setEl("feelsLike", data.feelsLike);
+  setEl("humidity", data.humidity);
+  setEl("uvIndex", data.uvIndex);
+  setEl("precipitation", data.precipChance || "0");
+  if (data.cityName) {
+    const locTitle = document.getElementById("locationTitle");
+    if (locTitle) locTitle.textContent = data.cityName;
+  }
+  if (data.iconCode !== undefined) {
+    const iconPath = getWeatherIconPath(data.iconCode);
+    window.currentWeatherIconUrl = iconPath;
+    const curIcon = document.getElementById("currentWeatherIcon");
+    if (curIcon) curIcon.src = iconPath;
+  }
 }
 
-// Automatically hide APK download prompts if currently running inside the native Android WebView
+function renderCachedMetrics(data) {
+  if (!data) return;
+  const setEl = (id, val) => { const el = document.getElementById(id); if (el && val !== undefined && val !== null) el.textContent = val; };
+  setEl("metricTemp", data.temperature ? `${data.temperature}°` : "");
+  setEl("metricMaxMin", (data.tempMin !== undefined && data.tempMax !== undefined) ? `${data.tempMin}° / ${data.tempMax}°` : "");
+  setEl("metricFeelsLike", data.feelsLike ? `${data.feelsLike}°` : "");
+  setEl("metricWindSpeed", data.windSpeed ? `${data.windSpeed} km/h` : "");
+  setEl("metricWindDir", data.windDirText || "");
+  setEl("metricHumidity", data.humidity ? `${data.humidity}%` : "");
+  setEl("metricUvIndex", data.uvIndex || "");
+  setEl("metricUvDesc", data.uvDescription || "");
+  setEl("metricAirQuality", data.airQuality || "");
+  setEl("metricDewPoint", data.dewPoint ? `${data.dewPoint}°` : "");
+  setEl("metricPressure", data.pressure ? `${data.pressure} mb` : "");
+  setEl("metricVisibility", data.visibility ? `${data.visibility} km` : "");
+  setEl("metricSunrise", data.sunrise || "");
+  setEl("metricSunset", data.sunset || "");
+  setEl("metricMoonrise", data.moonrise || "");
+  setEl("metricMoonset", data.moonset || "");
+  setEl("metricMoonPhase", data.moonPhase || "");
+}
+
+function renderCachedHourly(list) {
+  if (!Array.isArray(list) || list.length === 0) return;
+  const container = document.getElementById("hourlyForecast");
+  if (!container) return;
+  window.latestHourlyData = list;
+  container.innerHTML = "";
+
+  const firstTemp = list[0].temperature ?? list[0].temp ?? "--";
+  const firstPrecip = list[0].precipChance ?? list[0].pop ?? 0;
+  const pVal = Math.round(parseInt(String(firstPrecip).replace(/[^0-9]/g, ""), 10) || 0);
+  const badgeHtml = pVal > 0 ? `<div class="precip-badge"><span class="drop-icon">💧</span>${pVal}%</div>` : "";
+  const iconCode = list[0].iconCode ?? list[0].wxIcon ?? 44;
+  const iconSrc = getWeatherIconPath(iconCode);
+
+  const nowCard = document.createElement("div");
+  nowCard.className = "hourly-card";
+  nowCard.innerHTML = `
+    <p class="time"><strong>Now</strong></p>
+    <img id="nowHourlyIcon" src="${iconSrc}" alt="Weather Icon" class="forecast-icon" width="40" height="40">
+    <p class="temp">${firstTemp}°C</p>
+    ${badgeHtml}
+  `;
+  container.appendChild(nowCard);
+
+  const nowTime = new Date();
+  nowTime.setMinutes(0, 0, 0);
+  nowTime.setHours(nowTime.getHours() + 1);
+
+  list.forEach((item, idx) => {
+    if (idx === 0) return;
+    const temp = item.temperature ?? item.temp ?? "--";
+    const pop = Math.round(parseInt(String(item.precipChance ?? item.pop ?? 0).replace(/[^0-9]/g, ""), 10) || 0);
+    const popHtml = pop > 0 ? `<div class="precip-badge"><span class="drop-icon">💧</span>${pop}%</div>` : "";
+    const cardTime = new Date(nowTime.getTime() + (idx - 1) * 3600000);
+    const timeStr = cardTime.toLocaleTimeString([], { hour: "numeric", hour12: true });
+    const cardIcon = getWeatherIconPath(item.iconCode ?? item.wxIcon);
+
+    const card = document.createElement("div");
+    card.className = "hourly-card";
+    card.innerHTML = `
+      <p class="time"><strong>${timeStr}</strong></p>
+      <img src="${cardIcon}" alt="Weather Icon" class="forecast-icon" width="40" height="40">
+      <p class="temp">${temp}°C</p>
+      ${popHtml}
+    `;
+    container.appendChild(card);
+  });
+}
+
+function renderCachedDaily(list) {
+  if (!Array.isArray(list) || list.length === 0) return;
+  const container = document.getElementById("dailyForecast");
+  if (!container) return;
+  container.innerHTML = "";
+
+  list.forEach((item) => {
+    const iconPath = getWeatherIconPath(item.iconCode);
+    let pop = item.precipChance || 0;
+    const badgeHtml = pop > 0 ? `<div class="precip-badge"><span class="drop-icon">💧</span>${pop}%</div>` : "";
+
+    const card = document.createElement("div");
+    card.className = "daily-card";
+    card.innerHTML = `
+      <p class="day-name"><strong>${item.day || "N/A"}</strong></p>
+      <img src="${iconPath}" alt="Weather Icon" class="forecast-icon" width="40" height="40">
+      <p class="temps">High: ${item.tempMax}°C | Low: ${item.tempMin}°C</p>
+      <p class="condition-text">${item.condition || ""}</p>
+      ${badgeHtml}
+    `;
+    container.appendChild(card);
+  });
+}
+
+// --- FETCH FUNCTIONS WITH INSTANT CACHE & ASYNC UPDATE ---
+
+async function loadHourlyForecast(lat, lon) {
+  const n = lat !== undefined ? lat : currentLat;
+  const r = lon !== undefined ? lon : currentLon;
+  const cacheKey = `nwf_cache_hourly_${n}_${r}`;
+
+  try {
+    const cached = localStorage.getItem(cacheKey) || localStorage.getItem('nwf_cache_hourly');
+    if (cached) renderCachedHourly(JSON.parse(cached));
+  } catch(e) {}
+
+  try {
+    const resp = await fetch(`${API_BASE}/api/hourly-forecast?lat=${n}&lon=${r}`);
+    const json = await resp.json();
+    if (json.success && json.data) {
+      const list = Array.isArray(json.data) ? json.data : (json.data.hourly || Object.values(json.data)[0]);
+      if (Array.isArray(list) && list.length > 0) {
+        localStorage.setItem(cacheKey, JSON.stringify(list));
+        localStorage.setItem('nwf_cache_hourly', JSON.stringify(list));
+        renderCachedHourly(list);
+      }
+    }
+  } catch(f) { console.error("Failed to load hourly forecast:", f); }
+}
+
+async function loadDailyForecast(lat, lon) {
+  const n = lat !== undefined ? lat : currentLat;
+  const r = lon !== undefined ? lon : currentLon;
+  const cacheKey = `nwf_cache_daily_${n}_${r}`;
+
+  try {
+    const cached = localStorage.getItem(cacheKey) || localStorage.getItem('nwf_cache_daily');
+    if (cached) renderCachedDaily(JSON.parse(cached));
+  } catch(e) {}
+
+  try {
+    const resp = await fetch(`${API_BASE}/api/daily-forecast?lat=${n}&lon=${r}`);
+    const json = await resp.json();
+    if (json.success && Array.isArray(json.data)) {
+      localStorage.setItem(cacheKey, JSON.stringify(json.data));
+      localStorage.setItem('nwf_cache_daily', JSON.stringify(json.data));
+      renderCachedDaily(json.data);
+    }
+  } catch(c) { console.error("Failed to load daily forecast:", c); }
+}
+
+async function loadCurrentWeather(lat, lon) {
+  const n = lat !== undefined ? lat : currentLat;
+  const r = lon !== undefined ? lon : currentLon;
+  const cacheKey = `nwf_cache_current_${n}_${r}`;
+
+  try {
+    const cached = localStorage.getItem(cacheKey) || localStorage.getItem('nwf_cache_current');
+    if (cached) renderCachedCurrent(JSON.parse(cached));
+  } catch(e) {}
+
+  try {
+    const [weatherRes, rainRes] = await Promise.all([
+      fetch(`${API_BASE}/api/current-weather?lat=${n}&lon=${r}`),
+      fetch(`${API_BASE}/api/hourly-rain?lat=${n}&lon=${r}`).catch(() => null)
+    ]);
+    if (!weatherRes.ok) return;
+    const json = await weatherRes.data ? weatherRes : await weatherRes.json();
+    if (json.success && json.data) {
+      const data = json.data;
+      if (rainRes && rainRes.ok) {
+        const rainJson = await rainRes.json();
+        if (rainJson.success && Array.isArray(rainJson.data) && rainJson.data.length > 0) {
+          data.precipChance = rainJson.data[0].precipChance ?? rainJson.data[0].pop ?? data.precipChance;
+        }
+      }
+      localStorage.setItem(cacheKey, JSON.stringify(data));
+      localStorage.setItem('nwf_cache_current', JSON.stringify(data));
+      renderCachedCurrent(data);
+    }
+  } catch(f) { console.error("Failed to load current weather:", f); }
+}
+
+async function loadWeatherMetrics(lat, lon) {
+  const n = lat !== undefined ? lat : currentLat;
+  const r = lon !== undefined ? lon : currentLon;
+  const cacheKey = `nwf_cache_metrics_${n}_${r}`;
+
+  try {
+    const cached = localStorage.getItem(cacheKey) || localStorage.getItem('nwf_cache_metrics');
+    if (cached) renderCachedMetrics(JSON.parse(cached));
+  } catch(e) {}
+
+  try {
+    const resp = await fetch(`${API_BASE}/api/weather-metrics?lat=${n}&lon=${r}`);
+    if (!resp.ok) return;
+    const json = await resp.json();
+    if (json.success && json.data) {
+      localStorage.setItem(cacheKey, JSON.stringify(json.data));
+      localStorage.setItem('nwf_cache_metrics', JSON.stringify(json.data));
+      renderCachedMetrics(json.data);
+    }
+  } catch(l) { console.error("[Metrics Error]", l); }
+}
+
+async function loadInsights(lat, lon) {
+  const n = lat !== undefined ? lat : currentLat;
+  const r = lon !== undefined ? lon : currentLon;
+  try {
+    const resp = await fetch(`${API_BASE}/api/insights?lat=${n}&lon=${r}`);
+    const json = await resp.json();
+    if (json.success && json.insight) {
+      const el = document.getElementById("weatherInsight");
+      if (el) el.innerHTML = `<p>${json.insight}</p>`;
+    }
+  } catch(c) {}
+}
+
+async function loadPrecipitationInsight(lat, lon) {
+  const n = lat !== undefined ? lat : currentLat;
+  const r = lon !== undefined ? lon : currentLon;
+  const container = document.getElementById("rainChartSection") || document.querySelector(".precipitation-section");
+  if (!container) return;
+  try {
+    const [pRes, rRes] = await Promise.all([
+      fetch(`${API_BASE}/api/precipitation-insight?lat=${n}&lon=${r}`).catch(() => null),
+      fetch(`${API_BASE}/api/hourly-rain?lat=${n}&lon=${r}`).catch(() => null)
+    ]);
+    let active = false;
+    let text = "";
+    if (rRes && rRes.ok) {
+      const rData = await rRes.json();
+      if (rData.success && Array.isArray(rData.data)) {
+        active = rData.data.slice(0, 3).some(item => (item.qpf > 0 || (item.precipChance || 0) >= 40));
+      }
+    }
+    if (!active) { container.style.display = "none"; return; }
+    if (pRes && pRes.ok) {
+      const pData = await pRes.json();
+      if (pData.success && pData.data) {
+        const item = Array.isArray(pData.data) ? pData.data[0] : pData.data;
+        if (item && item.insightTextLong) {
+          text = Array.isArray(item.insightTextLong) ? item.insightTextLong[0] : item.insightTextLong;
+        }
+      }
+    }
+    const lower = text.toLowerCase();
+    if (lower.includes("no rain") || lower.includes("dry") || lower.includes("clear")) {
+      container.style.display = "none";
+      return;
+    }
+    const txtEl = document.getElementById("rainOutlookText");
+    if (txtEl && text) txtEl.innerText = text;
+  } catch(y) {
+    if (container) container.style.display = "none";
+  }
+}
+
+async function loadRainChart(lat, lon) {
+  const n = lat !== undefined ? lat : currentLat;
+  const r = lon !== undefined ? lon : currentLon;
+  const container = document.getElementById("rainChartSection");
+  const chart = document.getElementById("rainChart");
+  if (!container) return;
+  try {
+    const resp = await fetch(`${API_BASE}/api/hourly-rain?lat=${n}&lon=${r}`);
+    if (!resp.ok) { container.style.display = "none"; return; }
+    const json = await resp.json();
+    const list = Array.isArray(json?.data) ? json.data : [];
+    if (!json.success || list.length === 0) { container.style.display = "none"; return; }
+    const active = list.slice(0, 3).some(item => (Number(item?.precipChance || 0) >= 40 || Number(item?.qpf || 0) > 0));
+    if (!active || !chart) { container.style.display = "none"; return; }
+    chart.innerHTML = "";
+    const now = new Date();
+    now.setMinutes(0, 0, 0);
+    now.setHours(now.getHours() + 1);
+
+    list.forEach((item, idx) => {
+      if (!item) return;
+      const t = new Date(now.getTime() + 3600000 * idx);
+      const timeLabel = t.toLocaleTimeString([], { hour: "numeric", hour12: true }).toLowerCase();
+      const pop = Number(item.precipChance || 0);
+      const col = document.createElement("div");
+      col.className = "rain-bar-col";
+      col.innerHTML = `
+        <div class="bar-wrapper">
+          <div class="bar" style="height: ${Math.max(Math.min(pop, 100), 10)}%;"></div>
+        </div>
+        <span class="time-label">${timeLabel}</span>
+      `;
+      chart.appendChild(col);
+    });
+    container.style.display = "block";
+  } catch(u) {
+    if (container) container.style.display = "none";
+  }
+}
+
+function getWeatherIconPath(code) {
+  const icons = {
+    0: "0 - Tornado.png", 1: "1 - Tropical Storm.png", 2: "2 - Hurricane.png", 3: "3 - Strong Storms.png",
+    4: "4 - Thunderstorms.png", 5: "5 - Rain _ Snow.png", 6: "6 - Rain _ Sleet.png", 7: "7 - Wintry Mix.png",
+    8: "8 - Freezing Drizzle.png", 9: "9 - Drizzle.png", 10: "10 - Freezing Rain.png", 11: "11 - Showers.png",
+    12: "12 - Rain.png", 13: "13 - Flurries.png", 14: "14 - Snow Showers.png", 15: "15 - Blowing _ Drifting Snow.png",
+    16: "16 - Snow.png", 17: "17 - Hail.png", 18: "18 - Sleet.png", 19: "19 - Blowing Dust _ Sandstorm.png",
+    20: "20 - Foggy.png", 21: "21 - Haze.png", 22: "22 - Smoke.png", 23: "23 - Breezy.png", 24: "24 - Windy.png",
+    25: "25 - Frigid _ Ice Crystals.png", 26: "26 - Cloudy.png", 27: "27 - Mostly Cloudy Night.png",
+    28: "28 - Mostly Cloudy Day.png", 29: "29 - Partly Cloudy Night.png", 30: "30 - Partly Cloudy Day.png",
+    31: "31 - Clear.png", 32: "32 - Sunny.png", 33: "33 - Fair _ Mostly Clear.png", 34: "34 - Fair _ Mostly Sunny.png",
+    35: "35 - Mixed Rain and Hail.png", 36: "36 - Hot.png", 37: "37 - Isolated Thunderstorms.png",
+    38: "38 - Scattered Thunderstorms Day.png", 39: "39 - Scattered Showers Day.png", 40: "40 - Heavy Rain.png",
+    41: "41 - Scattered Snow Showers Day.png", 42: "42 - Heavy Snow.png", 43: "43 - Blizzard.png",
+    44: "44 - Not Available (N_A).png", 45: "45 - Scattered Showers Night.png", 46: "46 - Scattered Snow Showers Night.png",
+    47: "47 - Scattered Thunderstorms Night.png"
+  };
+  return `${API_BASE}/icons/${icons[code] || "44 - Not Available (N_A).png"}`;
+}
+
+function updateWeatherLocation(lat, lon, name) {
+  localStorage.setItem("savedLat", lat);
+  localStorage.setItem("savedLon", lon);
+  localStorage.setItem("savedLocationName", name);
+  currentLat = lat;
+  currentLon = lon;
+
+  const idx = name.indexOf(",");
+  let title = name;
+  let sub = "";
+  if (idx !== -1) {
+    title = name.substring(0, idx).trim();
+    sub = name.substring(idx + 1).trim();
+  }
+  const locTitle = document.getElementById("locationTitle");
+  if (locTitle) locTitle.textContent = title;
+  const locSub = document.getElementById("locationSub");
+  const timeStr = new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit", hour12: true });
+  if (locSub) locSub.innerHTML = `${sub} &bull; As of <span id="updateTime">${timeStr}</span>`;
+
+  loadCurrentWeather(lat, lon);
+  loadHourlyForecast(lat, lon);
+  loadDailyForecast(lat, lon);
+  loadWeatherMetrics(lat, lon);
+  loadRainChart(lat, lon);
+  loadInsights(lat, lon);
+  loadPrecipitationInsight(lat, lon);
+}
+
+// --- INITIAL LOAD & RESTORE CACHE IMMEDIATELY ---
+
+function initInstantApp() {
+  try {
+    const cCurrent = localStorage.getItem('nwf_cache_current');
+    if (cCurrent) renderCachedCurrent(JSON.parse(cCurrent));
+    const cMetrics = localStorage.getItem('nwf_cache_metrics');
+    if (cMetrics) renderCachedMetrics(JSON.parse(cMetrics));
+    const cHourly = localStorage.getItem('nwf_cache_hourly');
+    if (cHourly) renderCachedHourly(JSON.parse(cHourly));
+    const cDaily = localStorage.getItem('nwf_cache_daily');
+    if (cDaily) renderCachedDaily(JSON.parse(cDaily));
+  } catch(e) {}
+
+  const sLat = localStorage.getItem("savedLat");
+  const sLon = localStorage.getItem("savedLon");
+  const sName = localStorage.getItem("savedLocationName");
+
+  if (sLat && sLon) {
+    currentLat = sLat;
+    currentLon = sLon;
+    updateWeatherLocation(sLat, sLon, sName || "Saved Location");
+  } else {
+    loadCurrentWeather(currentLat, currentLon);
+    loadHourlyForecast(currentLat, currentLon);
+    loadDailyForecast(currentLat, currentLon);
+    loadWeatherMetrics(currentLat, currentLon);
+    loadRainChart(currentLat, currentLon);
+    loadInsights(currentLat, currentLon);
+    loadPrecipitationInsight(currentLat, currentLon);
+  }
+}
+
+document.addEventListener("DOMContentLoaded", initInstantApp);
+window.addEventListener("DOMContentLoaded", initInstantApp);
+
+// Search and UI handlers
+const searchInput = document.getElementById("locationSearchInput");
+const dropdown = document.getElementById("searchResultsDropdown");
+let searchTimeout;
+
+function resetToDefaultLocation() {
+  localStorage.removeItem("savedLat");
+  localStorage.removeItem("savedLon");
+  localStorage.removeItem("savedLocationName");
+  updateWeatherLocation("27.7000", "83.4500", "Butwal, Nepal");
+}
+
+if (searchInput) {
+  searchInput.addEventListener("input", (e) => {
+    clearTimeout(searchTimeout);
+    const query = e.target.value.trim();
+    if (query.length < 2) {
+      if (dropdown) { dropdown.innerHTML = ""; dropdown.style.display = "none"; }
+      return;
+    }
+    searchTimeout = setTimeout(async () => {
+      try {
+        const resp = await fetch(`${API_BASE}/api/search-locations?q=${encodeURIComponent(query)}`);
+        const json = await resp.json();
+        if (json.success && json.data.length > 0) {
+          if (dropdown) {
+            dropdown.innerHTML = "";
+            dropdown.style.display = "block";
+            json.data.forEach((item) => {
+              const div = document.createElement("div");
+              div.className = "search-item";
+              div.textContent = item.name;
+              div.addEventListener("click", () => {
+                searchInput.value = "";
+                dropdown.style.display = "none";
+                updateWeatherLocation(item.lat, item.lon, item.name);
+              });
+              dropdown.appendChild(div);
+            });
+          }
+        } else if (dropdown) {
+          dropdown.innerHTML = '<div class="search-item">No locations found in Nepal</div>';
+          dropdown.style.display = "block";
+        }
+      } catch(r) { console.error("Search failed:", r); }
+    }, 600);
+  });
+}
+
+const homeTitleEl = document.getElementById("homeTitle");
+if (homeTitleEl) homeTitleEl.addEventListener("click", resetToDefaultLocation);
+const homeLogoEl = document.getElementById("homeLogo");
+if (homeLogoEl) homeLogoEl.addEventListener("click", resetToDefaultLocation);
+
+// Automatically hide APK download prompts inside Android WebView
 document.addEventListener("DOMContentLoaded", function() {
   const isApp = /NepalWeatherApp|wv|Android.*Version\/[0-9]\.[0-9]/i.test(navigator.userAgent) || window.isNativeApp === true;
   if (isApp) {

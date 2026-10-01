@@ -63,3 +63,15 @@ dependencies {
     implementation("androidx.swiperefreshlayout:swiperefreshlayout:1.1.0")
     implementation("androidx.core:core-splashscreen:1.0.1")
 }
+
+// Automatically copy release APK to website root whenever release build finishes
+tasks.register<Copy>("copyReleaseApkToRoot") {
+    description = "Copies the release APK to the project root for website download"
+    from(layout.buildDirectory.file("outputs/apk/release/app-release.apk"))
+    into(rootDir)
+    rename { "nepal-weather-forecast.apk" }
+}
+
+tasks.matching { it.name == "assembleRelease" }.configureEach {
+    finalizedBy("copyReleaseApkToRoot")
+}
