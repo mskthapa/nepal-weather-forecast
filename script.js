@@ -323,6 +323,29 @@ async function loadRainChart(lat, lon) {
 }
 
 function getWeatherIconPath(code) {
+  if (code === undefined || code === null) code = 44;
+
+  const nowHour = new Date().getHours();
+  const isDaytime = (nowHour >= 6 && nowHour < 18);
+
+  // Automatic day/night icon code adjustment matching current local time
+  let adjustedCode = Number(code);
+  if (isDaytime) {
+    if (adjustedCode === 27) adjustedCode = 28;      // Mostly Cloudy Night -> Day
+    else if (adjustedCode === 29) adjustedCode = 30; // Partly Cloudy Night -> Day
+    else if (adjustedCode === 31) adjustedCode = 32; // Clear Night -> Sunny Day
+    else if (adjustedCode === 33) adjustedCode = 34; // Fair Night -> Fair Day
+    else if (adjustedCode === 45) adjustedCode = 39; // Showers Night -> Day
+    else if (adjustedCode === 47) adjustedCode = 38; // Thunderstorms Night -> Day
+  } else {
+    if (adjustedCode === 28) adjustedCode = 27;      // Mostly Cloudy Day -> Night
+    else if (adjustedCode === 30) adjustedCode = 29; // Partly Cloudy Day -> Night
+    else if (adjustedCode === 32) adjustedCode = 31; // Sunny Day -> Clear Night
+    else if (adjustedCode === 34) adjustedCode = 33; // Fair Day -> Fair Night
+    else if (adjustedCode === 39) adjustedCode = 45; // Showers Day -> Night
+    else if (adjustedCode === 38) adjustedCode = 47; // Thunderstorms Day -> Night
+  }
+
   const icons = {
     0: "0 - Tornado.png", 1: "1 - Tropical Storm.png", 2: "2 - Hurricane.png", 3: "3 - Strong Storms.png",
     4: "4 - Thunderstorms.png", 5: "5 - Rain _ Snow.png", 6: "6 - Rain _ Sleet.png", 7: "7 - Wintry Mix.png",
@@ -339,7 +362,7 @@ function getWeatherIconPath(code) {
     44: "44 - Not Available (N_A).png", 45: "45 - Scattered Showers Night.png", 46: "46 - Scattered Snow Showers Night.png",
     47: "47 - Scattered Thunderstorms Night.png"
   };
-  const filename = icons[code] || "44 - Not Available (N_A).png";
+  const filename = icons[adjustedCode] || icons[code] || "44 - Not Available (N_A).png";
   return `icons/${encodeURIComponent(filename)}`;
 }
 
