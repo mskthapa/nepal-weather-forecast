@@ -70,9 +70,11 @@ class MainActivity : ComponentActivity() {
         if (!prefs.contains("nwf_cache_current")) {
             val defaultCurrent = """{"cityName":"Lumbini Province, Nepal","region":"Nepal","temperature":29,"feelsLike":34,"condition":"Fair","humidity":76,"precipChance":4,"uvIndex":0,"iconCode":30}"""
             val defaultMetrics = """{"temperature":29,"tempMax":32,"tempMin":25,"feelsLike":34,"windSpeed":11,"windDirText":"N","humidity":76,"uvIndex":0,"uvDescription":"Low","dewPoint":24,"pressure":1010.42,"visibility":6,"airQuality":106,"sunrise":"6:03 AM","sunset":"5:57 PM","moonrise":"9:11 PM","moonset":"10:47 AM","moonPhase":"Waning Gibbous"}"""
+            val defaultInsight = "Fair weather conditions expected. Warm daytime temperatures."
             prefs.edit()
                 .putString("nwf_cache_current", defaultCurrent)
                 .putString("nwf_cache_metrics", defaultMetrics)
+                .putString("nwf_cache_insight", defaultInsight)
                 .apply()
         }
 
@@ -81,7 +83,8 @@ class MainActivity : ComponentActivity() {
             "nwf_cache_current" to "https://nepal-weather-forecast-backend.onrender.com/api/current-weather?lat=27.7000&lon=83.4500",
             "nwf_cache_hourly" to "https://nepal-weather-forecast-backend.onrender.com/api/hourly-forecast?lat=27.7000&lon=83.4500",
             "nwf_cache_daily" to "https://nepal-weather-forecast-backend.onrender.com/api/daily-forecast?lat=27.7000&lon=83.4500",
-            "nwf_cache_metrics" to "https://nepal-weather-forecast-backend.onrender.com/api/weather-metrics?lat=27.7000&lon=83.4500"
+            "nwf_cache_metrics" to "https://nepal-weather-forecast-backend.onrender.com/api/weather-metrics?lat=27.7000&lon=83.4500",
+            "nwf_cache_insight" to "https://nepal-weather-forecast-backend.onrender.com/api/insights?lat=27.7000&lon=83.4500"
         )
 
         for ((key, urlStr) in endpoints) {
@@ -93,7 +96,7 @@ class MainActivity : ComponentActivity() {
                     conn.requestMethod = "GET"
                     if (conn.responseCode == 200) {
                         val text = conn.inputStream.bufferedReader().use { it.readText() }
-                        if (text.contains("\"success\":true")) {
+                        if (text.contains("\"success\":true") || text.contains("insight")) {
                             prefs.edit().putString(key, text).apply()
                         }
                     }
@@ -193,6 +196,7 @@ fun WeatherAppContent(
                                 val metJson = prefs.getString("nwf_cache_metrics", "") ?: ""
                                 val hrlJson = prefs.getString("nwf_cache_hourly", "") ?: ""
                                 val dayJson = prefs.getString("nwf_cache_daily", "") ?: ""
+                                val insJson = prefs.getString("nwf_cache_insight", "") ?: ""
 
                                 val js = """
                                     (function() {
@@ -230,6 +234,20 @@ fun WeatherAppContent(
                                                 var dy = parsedD.data || parsedD;
                                                 localStorage.setItem('nwf_cache_daily', JSON.stringify(dy));
                                                 if (typeof renderCachedDaily === 'function') renderCachedDaily(dy);
+                                            }
+                                            if ('$insJson' !== '') {
+                                                var insData = '$insJson';
+                                                try {
+                                                    var pIns = JSON.parse(insData);
+                                                    var tIns = pIns.insight || pIns;
+                                                    if (typeof tIns === 'string') {
+                                                        localStorage.setItem('nwf_cache_insight', tIns);
+                                                        if (typeof renderCachedInsight === 'function') renderCachedInsight(tIns);
+                                                    }
+                                                } catch(e) {
+                                                    localStorage.setItem('nwf_cache_insight', insData);
+                                                    if (typeof renderCachedInsight === 'function') renderCachedInsight(insData);
+                                                }
                                             }
                                         } catch(e) {}
                                     })();

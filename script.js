@@ -57,21 +57,39 @@ function renderCachedMetrics(data) {
   setEl("metricMoonPhase", data.moonPhase || "--");
 }
 
+function renderCachedInsight(text) {
+  if (!text) return;
+  const el = document.getElementById("weatherInsight");
+  if (el) el.innerHTML = `<p>${text}</p>`;
+}
+
 function renderCachedHourly(list) {
   if (!Array.isArray(list) || list.length === 0) return;
   const container = document.getElementById("hourlyForecast");
   if (!container) return;
-  window.latestHourlyData = list;
+
+  const nowMs = Date.now();
+  const oneHourMs = 3600000;
+
+  // Filter out expired items from past hours if item has valid ISO timestamp
+  const validItems = list.filter(item => {
+    if (!item.time) return true;
+    const itemDate = new Date(item.time);
+    if (isNaN(itemDate.getTime())) return true;
+    return itemDate.getTime() >= (nowMs - oneHourMs);
+  });
+
+  const displayList = validItems.length > 0 ? validItems : list;
+  window.latestHourlyData = displayList;
   container.innerHTML = "";
 
-  const firstTemp = list[0].temperature ?? list[0].temp ?? "--";
-  const firstPrecip = list[0].precipChance ?? list[0].pop ?? 0;
+  const curIcon = document.getElementById("currentWeatherIcon");
+  const mainIconSrc = (curIcon && curIcon.src && curIcon.src.indexOf('icons/') !== -1) ? curIcon.src : (window.currentWeatherIconUrl || getWeatherIconPath(displayList[0].iconCode ?? 44));
+
+  const firstTemp = displayList[0].temperature ?? displayList[0].temp ?? "--";
+  const firstPrecip = displayList[0].precipChance ?? displayList[0].pop ?? 0;
   const pVal = Math.round(parseInt(String(firstPrecip).replace(/[^0-9]/g, ""), 10) || 0);
   const badgeHtml = pVal > 0 ? `<div class="precip-badge"><span class="drop-icon">💧</span>${pVal}%</div>` : "";
-  const iconCode = list[0].iconCode ?? list[0].wxIcon ?? 44;
-
-  const curIcon = document.getElementById("currentWeatherIcon");
-  const mainIconSrc = (curIcon && curIcon.src && curIcon.src.indexOf('icons/') !== -1) ? curIcon.src : (window.currentWeatherIconUrl || getWeatherIconPath(iconCode));
 
   const nowCard = document.createElement("div");
   nowCard.className = "hourly-card";
@@ -83,17 +101,28 @@ function renderCachedHourly(list) {
   `;
   container.appendChild(nowCard);
 
-  const nowTime = new Date();
-  nowTime.setMinutes(0, 0, 0);
-  nowTime.setHours(nowTime.getHours() + 1);
+  const fallbackTime = new Date();
+  fallbackTime.setMinutes(0, 0, 0);
+  fallbackTime.setHours(fallbackTime.getHours() + 1);
 
-  list.forEach((item, idx) => {
+  displayList.forEach((item, idx) => {
     if (idx === 0) return;
     const temp = item.temperature ?? item.temp ?? "--";
     const pop = Math.round(parseInt(String(item.precipChance ?? item.pop ?? 0).replace(/[^0-9]/g, ""), 10) || 0);
     const popHtml = pop > 0 ? `<div class="precip-badge"><span class="drop-icon">💧</span>${pop}%</div>` : "";
-    const cardTime = new Date(nowTime.getTime() + (idx - 1) * 3600000);
-    const timeStr = cardTime.toLocaleTimeString([], { hour: "numeric", hour12: true });
+
+    let timeStr = "";
+    if (item.time) {
+      const itemDate = new Date(item.time);
+      if (!isNaN(itemDate.getTime())) {
+        timeStr = itemDate.toLocaleTimeString([], { hour: "numeric", hour12: true });
+      }
+    }
+    if (!timeStr) {
+      const cardTime = new Date(fallbackTime.getTime() + (idx - 1) * 3600000);
+      timeStr = cardTime.toLocaleTimeString([], { hour: "numeric", hour12: true });
+    }
+
     const cardIcon = getWeatherIconPath(item.iconCode ?? item.wxIcon);
 
     const card = document.createElement("div");
@@ -236,12 +265,20 @@ async function loadWeatherMetrics(lat, lon) {
 async function loadInsights(lat, lon) {
   const n = lat !== undefined ? lat : currentLat;
   const r = lon !== undefined ? lon : currentLon;
+  const cacheKey = `nwf_cache_insight_${n}_${r}`;
+
+  try {
+    const cached = localStorage.getItem(cacheKey) || localStorage.getItem('nwf_cache_insight');
+    if (cached) renderCachedInsight(cached);
+  } catch(e) {}
+
   try {
     const resp = await fetch(`${API_BASE}/api/insights?lat=${n}&lon=${r}`);
     const json = await resp.json();
     if (json.success && json.insight) {
-      const el = document.getElementById("weatherInsight");
-      if (el) el.innerHTML = `<p>${json.insight}</p>`;
+      localStorage.setItem(cacheKey, json.insight);
+      localStorage.setItem('nwf_cache_insight', json.insight);
+      renderCachedInsight(json.insight);
     }
   } catch(c) {}
 }
@@ -452,6 +489,8 @@ function initInstantApp() {
     if (cCurrent) renderCachedCurrent(JSON.parse(cCurrent));
     const cMetrics = localStorage.getItem('nwf_cache_metrics');
     if (cMetrics) renderCachedMetrics(JSON.parse(cMetrics));
+    const cInsight = localStorage.getItem('nwf_cache_insight');
+    if (cInsight) renderCachedInsight(cInsight);
     const cHourly = localStorage.getItem('nwf_cache_hourly');
     if (cHourly) renderCachedHourly(JSON.parse(cHourly));
     const cDaily = localStorage.getItem('nwf_cache_daily');
