@@ -30,6 +30,8 @@ function renderCachedCurrent(data) {
     window.currentWeatherIconUrl = iconPath;
     const curIcon = document.getElementById("currentWeatherIcon");
     if (curIcon) curIcon.src = iconPath;
+    const nowIcon = document.getElementById("nowHourlyIcon");
+    if (nowIcon) nowIcon.src = iconPath;
   }
 }
 
@@ -67,13 +69,15 @@ function renderCachedHourly(list) {
   const pVal = Math.round(parseInt(String(firstPrecip).replace(/[^0-9]/g, ""), 10) || 0);
   const badgeHtml = pVal > 0 ? `<div class="precip-badge"><span class="drop-icon">💧</span>${pVal}%</div>` : "";
   const iconCode = list[0].iconCode ?? list[0].wxIcon ?? 44;
-  const iconSrc = getWeatherIconPath(iconCode);
+
+  const curIcon = document.getElementById("currentWeatherIcon");
+  const mainIconSrc = (curIcon && curIcon.src && curIcon.src.indexOf('icons/') !== -1) ? curIcon.src : (window.currentWeatherIconUrl || getWeatherIconPath(iconCode));
 
   const nowCard = document.createElement("div");
   nowCard.className = "hourly-card";
   nowCard.innerHTML = `
     <p class="time"><strong>Now</strong></p>
-    <img id="nowHourlyIcon" src="${iconSrc}" alt="Weather Icon" class="forecast-icon" width="40" height="40">
+    <img id="nowHourlyIcon" src="${mainIconSrc}" alt="Weather Icon" class="forecast-icon" width="40" height="40">
     <p class="temp">${firstTemp}°C</p>
     ${badgeHtml}
   `;
@@ -401,6 +405,42 @@ function updateWeatherLocation(lat, lon, name) {
   loadRainChart(lat, lon);
   loadInsights(lat, lon);
   loadPrecipitationInsight(lat, lon);
+}
+
+function requestUserLocation() {
+  if (!navigator.geolocation) {
+    alert("Geolocation is not supported by your browser.");
+    return;
+  }
+
+  const locBtn = document.getElementById("getLocationBtn");
+  if (locBtn) {
+    locBtn.style.opacity = "0.5";
+    setTimeout(() => { if (locBtn) locBtn.style.opacity = "1"; }, 1500);
+  }
+
+  const handleSuccess = (pos) => {
+    const lat = pos.coords.latitude;
+    const lon = pos.coords.longitude;
+    currentLat = lat;
+    currentLon = lon;
+    updateWeatherLocation(lat, lon, "Current Location");
+  };
+
+  const handleError = (err) => {
+    console.warn("Geolocation fallback:", err ? err.message : "error");
+    navigator.geolocation.getCurrentPosition(
+      handleSuccess,
+      () => {},
+      { timeout: 10000, enableHighAccuracy: false, maximumAge: 300000 }
+    );
+  };
+
+  navigator.geolocation.getCurrentPosition(
+    handleSuccess,
+    handleError,
+    { timeout: 8000, enableHighAccuracy: true, maximumAge: 60000 }
+  );
 }
 
 // --- INITIAL LOAD & RESTORE CACHE IMMEDIATELY ---
