@@ -58,10 +58,30 @@ function renderCachedCurrent(data) {
   setEl("uvIndex", (data.uvIndex !== undefined && data.uvIndex !== null) ? data.uvIndex : "0");
   setEl("precipitation", data.precipChance !== undefined ? data.precipChance : "0");
 
-  if (data.cityName) {
-    const locTitle = document.getElementById("locationTitle");
-    if (locTitle) locTitle.textContent = data.cityName;
+  const savedName = localStorage.getItem("savedLocationName");
+  const locTitle = document.getElementById("locationTitle");
+
+  if (locTitle) {
+  let displayName = "Butwal, Nepal"; // Default fallback city
+
+  if (savedName && savedName.trim() !== "" && savedName !== "Current Location" && savedName !== "undefined" && savedName !== "null") {
+    displayName = savedName;
+  } else if (data.cityName && data.cityName.trim() !== "" && data.cityName !== "Current Location" && data.cityName !== "undefined" && data.cityName !== "null") {
+    displayName = data.cityName;
   }
+
+  // Extract the city name before the first comma (e.g., "Kathmandu, Bagmati" -> "Kathmandu")
+  const idx = displayName.indexOf(",");
+  locTitle.textContent = idx !== -1 ? displayName.substring(0, idx).trim() : displayName;
+}
+  // if (locTitle) {
+  //   if (savedName && savedName !== "Current Location") {
+  //     const idx = savedName.indexOf(",");
+  //     locTitle.textContent = idx !== -1 ? savedName.substring(0, idx).trim() : savedName;
+  //   } else if (data.cityName && data.cityName !== "Current Location") {
+  //     locTitle.textContent = data.cityName;
+  //   }
+  // }
 
   const timeStr = new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit", hour12: true });
   const locSub = document.getElementById("locationSub");
@@ -493,7 +513,7 @@ function updateWeatherLocation(lat, lon, name) {
   if (locTitle) locTitle.textContent = title;
   const locSub = document.getElementById("locationSub");
   const timeStr = new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit", hour12: true });
-  if (locSub) locSub.innerHTML = `${sub} &bull; As of <span id="updateTime">${timeStr}</span>`;
+  if (locSub) locSub.innerHTML = `${sub ? sub + " &bull; " : ""}As of <span id="updateTime">${timeStr}</span>`;
 
   loadCurrentWeather(lat, lon);
   loadHourlyForecast(lat, lon);
@@ -566,13 +586,7 @@ function initInstantApp() {
     currentLon = sLon;
     updateWeatherLocation(sLat, sLon, sName || "Saved Location");
   } else {
-    loadCurrentWeather(currentLat, currentLon);
-    loadHourlyForecast(currentLat, currentLon);
-    loadDailyForecast(currentLat, currentLon);
-    loadWeatherMetrics(currentLat, currentLon);
-    loadRainChart(currentLat, currentLon);
-    loadInsights(currentLat, currentLon);
-    loadPrecipitationInsight(currentLat, currentLon);
+    updateWeatherLocation("27.7000", "83.4500", "Butwal, Nepal");
   }
 }
 
