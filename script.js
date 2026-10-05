@@ -2,6 +2,50 @@ const rawApiBase = "localhost" === window.location.hostname || "127.0.0.1" === w
 const API_BASE = rawApiBase.replace(/\/+$/, "");
 let currentLat = "27.7000", currentLon = "83.4500";
 
+// --- BUILT-IN NEPAL LOCATIONS DATABASE FOR INSTANT SEARCH ---
+const NEPAL_PRESET_LOCATIONS = [
+  { name: "Kathmandu, Bagmati, Nepal", lat: "27.7172", lon: "85.3240" },
+  { name: "Pokhara, Gandaki, Nepal", lat: "28.2096", lon: "83.9856" },
+  { name: "Butwal, Lumbini, Nepal", lat: "27.7000", lon: "83.4500" },
+  { name: "Lalitpur (Patan), Bagmati, Nepal", lat: "27.6667", lon: "85.3167" },
+  { name: "Bhaktapur, Bagmati, Nepal", lat: "27.6710", lon: "85.4298" },
+  { name: "Bharatpur, Chitwan, Bagmati, Nepal", lat: "27.6833", lon: "84.4333" },
+  { name: "Biratnagar, Koshi, Nepal", lat: "26.4525", lon: "87.2718" },
+  { name: "Birgunj, Madhesh, Nepal", lat: "27.0000", lon: "84.8667" },
+  { name: "Dhangadhi, Sudurpashchim, Nepal", lat: "28.6833", lon: "80.6000" },
+  { name: "Dharan, Koshi, Nepal", lat: "26.8125", lon: "87.2833" },
+  { name: "Janakpur, Madhesh, Nepal", lat: "26.7167", lon: "85.9167" },
+  { name: "Hetauda, Bagmati, Nepal", lat: "27.4167", lon: "85.0333" },
+  { name: "Itahari, Koshi, Nepal", lat: "26.6667", lon: "87.2833" },
+  { name: "Nepalgunj, Lumbini, Nepal", lat: "28.0500", lon: "81.6167" },
+  { name: "Tansen, Palpa, Lumbini, Nepal", lat: "27.8667", lon: "83.5500" },
+  { name: "Birendranagar, Surkhet, Karnali, Nepal", lat: "28.6000", lon: "81.6333" },
+  { name: "Gorkha, Gandaki, Nepal", lat: "28.0000", lon: "84.6333" },
+  { name: "Bandipur, Tanahun, Gandaki, Nepal", lat: "27.9333", lon: "84.4167" },
+  { name: "Jomsom, Mustang, Gandaki, Nepal", lat: "28.7833", lon: "83.7333" },
+  { name: "Muktinath, Mustang, Gandaki, Nepal", lat: "28.8167", lon: "83.8667" },
+  { name: "Lukla, Everest Region, Koshi, Nepal", lat: "27.6881", lon: "86.7314" },
+  { name: "Namche Bazaar, Everest Region, Koshi, Nepal", lat: "27.8000", lon: "86.7167" },
+  { name: "Nagarkot, Bhaktapur, Bagmati, Nepal", lat: "27.7175", lon: "85.5200" },
+  { name: "Dhulikhel, Kavre, Bagmati, Nepal", lat: "27.6250", lon: "85.5500" },
+  { name: "Ilam, Koshi, Nepal", lat: "26.9083", lon: "87.9281" },
+  { name: "Birtamode, Jhapa, Koshi, Nepal", lat: "26.6433", lon: "87.9869" },
+  { name: "Lahan, Siraha, Madhesh, Nepal", lat: "26.7167", lon: "86.4833" },
+  { name: "Rajbiraj, Saptari, Madhesh, Nepal", lat: "26.5333", lon: "86.7500" },
+  { name: "Banepa, Kavre, Bagmati, Nepal", lat: "27.6333", lon: "85.5167" },
+  { name: "Kirtipur, Kathmandu, Bagmati, Nepal", lat: "27.6833", lon: "85.2833" },
+  { name: "Lumbini, Rupandehi, Lumbini, Nepal", lat: "27.4833", lon: "83.2833" },
+  { name: "Siddharthanagar (Bhairahawa), Lumbini, Nepal", lat: "27.5000", lon: "83.4500" },
+  { name: "Tikapur, Kailali, Sudurpashchim, Nepal", lat: "28.5000", lon: "81.1333" },
+  { name: "Damak, Jhapa, Koshi, Nepal", lat: "26.6667", lon: "87.7000" },
+  { name: "Inaruwa, Sunsari, Koshi, Nepal", lat: "26.6000", lon: "87.1500" },
+  { name: "Tulsipur, Dang, Lumbini, Nepal", lat: "28.1333", lon: "82.3000" },
+  { name: "Ghorahi, Dang, Lumbini, Nepal", lat: "28.0333", lon: "82.5000" },
+  { name: "Kalaiya, Bara, Madhesh, Nepal", lat: "27.0333", lon: "85.0000" },
+  { name: "Malangwa, Sarlahi, Madhesh, Nepal", lat: "26.8500", lon: "85.5500" },
+  { name: "Jaleshwar, Mahottari, Madhesh, Nepal", lat: "26.6500", lon: "85.8000" }
+];
+
 // --- INSTANT CACHE RENDERERS ---
 
 function renderCachedCurrent(data) {
@@ -538,6 +582,28 @@ window.addEventListener("DOMContentLoaded", initInstantApp);
 // Search and UI handlers
 const searchInput = document.getElementById("locationSearchInput");
 const dropdown = document.getElementById("searchResultsDropdown");
+
+function renderSearchDropdown(list) {
+  if (!dropdown) return;
+  dropdown.innerHTML = "";
+  if (list && list.length > 0) {
+    dropdown.style.display = "block";
+    list.forEach((item) => {
+      const div = document.createElement("div");
+      div.className = "search-item";
+      div.textContent = item.name;
+      div.addEventListener("click", () => {
+        if (searchInput) searchInput.value = "";
+        dropdown.style.display = "none";
+        updateWeatherLocation(item.lat, item.lon, item.name);
+      });
+      dropdown.appendChild(div);
+    });
+  } else {
+    dropdown.style.display = "none";
+  }
+}
+
 let searchTimeout;
 
 function resetToDefaultLocation() {
@@ -555,32 +621,54 @@ if (searchInput) {
       if (dropdown) { dropdown.innerHTML = ""; dropdown.style.display = "none"; }
       return;
     }
+
+    // 1. INSTANT LOCAL OFFLINE SEARCH MATCHING
+    const localMatches = NEPAL_PRESET_LOCATIONS.filter(item =>
+      item.name.toLowerCase().includes(query.toLowerCase())
+    );
+
+    if (localMatches.length > 0) {
+      renderSearchDropdown(localMatches.slice(0, 6));
+    }
+
+    // 2. ASYNC NETWORK GEOLOCATION SEARCH (Fallback/Additional)
     searchTimeout = setTimeout(async () => {
       try {
         const resp = await fetch(`${API_BASE}/api/search-locations?q=${encodeURIComponent(query)}`);
         const json = await resp.json();
-        if (json.success && json.data.length > 0) {
-          if (dropdown) {
-            dropdown.innerHTML = "";
-            dropdown.style.display = "block";
-            json.data.forEach((item) => {
-              const div = document.createElement("div");
-              div.className = "search-item";
-              div.textContent = item.name;
-              div.addEventListener("click", () => {
-                searchInput.value = "";
-                dropdown.style.display = "none";
-                updateWeatherLocation(item.lat, item.lon, item.name);
-              });
-              dropdown.appendChild(div);
-            });
+        const remoteList = (json && json.success && Array.isArray(json.data)) ? json.data : [];
+
+        // Merge local and remote without duplicates
+        const seen = new Set(localMatches.map(m => m.name.toLowerCase()));
+        const combined = [...localMatches];
+
+        remoteList.forEach(item => {
+          if (item && item.name && !seen.has(item.name.toLowerCase())) {
+            seen.add(item.name.toLowerCase());
+            combined.push(item);
           }
+        });
+
+        if (combined.length > 0) {
+          renderSearchDropdown(combined.slice(0, 6));
+        } else {
+          // ONLY show "No locations found" if BOTH local and remote returned zero results
+          if (dropdown) {
+            dropdown.innerHTML = '<div class="search-item">No locations found in Nepal</div>';
+            dropdown.style.display = "block";
+          }
+        }
+      } catch(r) {
+        console.error("Search API error:", r);
+        // On network error, keep showing localMatches if any exist
+        if (localMatches.length > 0) {
+          renderSearchDropdown(localMatches.slice(0, 6));
         } else if (dropdown) {
           dropdown.innerHTML = '<div class="search-item">No locations found in Nepal</div>';
           dropdown.style.display = "block";
         }
-      } catch(r) { console.error("Search failed:", r); }
-    }, 600);
+      }
+    }, 300);
   });
 }
 

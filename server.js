@@ -80,11 +80,11 @@ app.get('/api/hourly-weather', async (req, res) => {
   }
 });
 
-// 2. Daily Forecast Routes (Supports both naming conventions)
+// 2. Daily Forecast Routes
 app.get('/api/daily-weather', handleDailyWeather);
 app.get('/api/daily-forecast', handleDailyWeather);
 
-// 3. Current Weather Observations Route (Updated with Reverse Geocoding)
+// 3. Current Weather Observations Route
 app.get('/api/current-weather', async (req, res) => {
   try {
     const lat = req.query.lat || '27.701';
@@ -92,25 +92,24 @@ app.get('/api/current-weather', async (req, res) => {
     
     const weatherUrl = `https://api.weather.com/v3/wx/observations/current?geocode=${lat},${lon}&units=m&language=en-US&format=json&apiKey=${KEY_CURRENT_WEATHER}`;
     
-    // Fetch weather data and reverse-geocode the location name at the same time
     const [weatherRes, geoRes] = await Promise.all([
       axios.get(weatherUrl),
       axios.get(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=10&accept-language=en`, {
+        timeout: 4000,
         headers: { 'User-Agent': 'WeatherApp-Nepal' }
-      }).catch(() => ({ data: {} })) // Fallback safely if geocoding fails
+      }).catch(() => ({ data: {} }))
     ]);
 
     const raw = weatherRes.data;
     const address = geoRes.data.address || {};
     
-    // Extract a clean city, town, or village name
     const cityName = address.city || address.town || address.village || address.suburb || address.county || "Current Location";
     const regionName = address.state || address.country || "";
 
     res.json({
       success: true,
       data: {
-        cityName: cityName,         // <-- This is what your frontend needs for the title
+        cityName: cityName,
         region: regionName,
         temperature: raw.temperature ?? '--',
         feelsLike: raw.temperatureFeelsLike ?? '--',
@@ -128,8 +127,7 @@ app.get('/api/current-weather', async (req, res) => {
   }
 });
 
-
-// 4. Insights / Outlook Route
+// 4. Insights Route
 app.get('/api/insights', async (req, res) => {
   try {
     const lat = req.query.lat || '27.701';
@@ -155,25 +153,17 @@ app.get('/api/insights', async (req, res) => {
   }
 });
 
-// 5. Weather Metrics Route (Aggregating 4 Weather.com endpoints)
+// 5. Weather Metrics Route
 app.get('/api/weather-metrics', async (req, res) => {
   try {
     const lat = req.query.lat || '27.714';
     const lon = req.query.lon || '85.311';
 
-    // 1. Hourly Forecast (for general metrics: temp, humidity, wind, UV, etc.)
     const hourlyUrl = `https://api.weather.com/v3/wx/forecast/hourly/2day?geocode=${lat},${lon}&units=m&language=en-US&format=json&apiKey=${KEY_METRICS}`;
-    
-    // 2. Daily 3-Day Forecast (Used for Moonrise, Moonset, and Moon Phase)
     const dailyUrl = `https://api.weather.com/v3/wx/forecast/daily/3day?geocode=${lat},${lon}&units=m&language=en-US&format=json&apiKey=${KEY_METRICS}`;
-    
-    // 3. Historical 1-Day Conditions (Used for Sunrise and Sunset)
     const historicalUrl = `https://api.weather.com/v3/wx/conditions/historical/hourly/1day?geocode=${lat},${lon}&units=m&language=en-US&format=json&apiKey=${KEY_METRICS}`;
-    
-    // 4. Global Air Quality 12-Hour Forecast (Used for Air Quality Index)
     const aqiUrl = `https://api.weather.com/v3/wx/globalAirQuality/forecast/hourly/12hour?geocode=${lat},${lon}&language=en-US&scale=EPA&format=json&apiKey=${KEY_METRICS}`;
 
-    // Execute requests in parallel
     const [hourlyRes, dailyRes, historicalRes, aqiRes] = await Promise.all([
       axios.get(hourlyUrl).catch(() => ({ data: {} })),
       axios.get(dailyUrl).catch(() => ({ data: {} })),
@@ -186,7 +176,6 @@ app.get('/api/weather-metrics', async (req, res) => {
     const historical = historicalRes.data || {};
     const aqiData = aqiRes.data || {};
 
-    // Helper to find the first valid non-empty item from response arrays
     const parseFirst = (val) => {
       if (Array.isArray(val)) {
         const found = val.find(item => item !== null && item !== undefined && item !== '');
@@ -195,7 +184,6 @@ app.get('/api/weather-metrics', async (req, res) => {
       return (val !== null && val !== undefined && val !== '') ? val : null;
     };
 
-    // Helper to format ISO timestamps (e.g., "2026-09-21T06:05:00+0545") to "6:05 AM"
     const formatTimeStr = (isoString) => {
       if (!isoString) return null;
       try {
@@ -209,18 +197,13 @@ app.get('/api/weather-metrics', async (req, res) => {
       }
     };
 
-    // --- METRIC EXTRACTION --- //
-
-    // 1. Air Quality (from 12-hour globalAirQuality array)
     const aqiArray = aqiData.globalairquality?.airQualityIndex || aqiData.airQualityIndex;
     const liveAQI = parseFirst(aqiArray) ?? '75';
 
-    // 2. Moon Metrics (from Daily 3-Day Forecast)
     const rawMoonrise = parseFirst(daily.moonriseTimeLocal);
     const rawMoonset = parseFirst(daily.moonsetTimeLocal);
     const rawMoonPhase = parseFirst(daily.moonPhase) || parseFirst(daily.moonPhaseCode);
 
-    // 3. Sunrise & Sunset (from Historical 1-Day Conditions, with Daily fallback)
     const rawSunrise = parseFirst(historical.sunriseTimeLocal) || parseFirst(daily.sunriseTimeLocal);
     const rawSunset = parseFirst(historical.sunsetTimeLocal) || parseFirst(daily.sunsetTimeLocal);
 
@@ -241,8 +224,6 @@ app.get('/api/weather-metrics', async (req, res) => {
         dewPoint: parseFirst(raw.temperatureDewPoint) || '--',
         pressure: parseFirst(raw.pressureMeanSeaLevel) || '--',
         visibility: parseFirst(raw.visibility) || '--',
-        
-        // Output extracted fields
         airQuality: liveAQI,
         sunrise: formatTimeStr(rawSunrise) || '6:05 AM',
         sunset: formatTimeStr(rawSunset) || '6:18 PM',
@@ -256,10 +237,6 @@ app.get('/api/weather-metrics', async (req, res) => {
     res.status(500).json({ success: false, error: error.message });
   }
 });
-
-const PORT = 5000;
-app.listen(PORT, () => console.log(`Proxy running on http://localhost:${PORT}`));
-
 
 // 6. Hourly Forecast Endpoint
 app.get('/api/hourly-forecast', async (req, res) => {
@@ -329,48 +306,105 @@ app.get('/api/hourly-rain', async (req, res) => {
   }
 });
 
-// 8. Nepal Location Search Route (OpenStreetMap Nominatim)
+// 8. Nepal Location Search Route (Local Offline Database + Nominatim Fallback)
+
+const NEPAL_PRESET_LOCATIONS = [
+  { name: "Kathmandu, Bagmati, Nepal", lat: "27.7172", lon: "85.3240" },
+  { name: "Pokhara, Gandaki, Nepal", lat: "28.2096", lon: "83.9856" },
+  { name: "Butwal, Lumbini, Nepal", lat: "27.7000", lon: "83.4500" },
+  { name: "Lalitpur (Patan), Bagmati, Nepal", lat: "27.6667", lon: "85.3167" },
+  { name: "Bhaktapur, Bagmati, Nepal", lat: "27.6710", lon: "85.4298" },
+  { name: "Bharatpur, Chitwan, Bagmati, Nepal", lat: "27.6833", lon: "84.4333" },
+  { name: "Biratnagar, Koshi, Nepal", lat: "26.4525", lon: "87.2718" },
+  { name: "Birgunj, Madhesh, Nepal", lat: "27.0000", lon: "84.8667" },
+  { name: "Dhangadhi, Sudurpashchim, Nepal", lat: "28.6833", lon: "80.6000" },
+  { name: "Dharan, Koshi, Nepal", lat: "26.8125", lon: "87.2833" },
+  { name: "Janakpur, Madhesh, Nepal", lat: "26.7167", lon: "85.9167" },
+  { name: "Hetauda, Bagmati, Nepal", lat: "27.4167", lon: "85.0333" },
+  { name: "Itahari, Koshi, Nepal", lat: "26.6667", lon: "87.2833" },
+  { name: "Nepalgunj, Lumbini, Nepal", lat: "28.0500", lon: "81.6167" },
+  { name: "Tansen, Palpa, Lumbini, Nepal", lat: "27.8667", lon: "83.5500" },
+  { name: "Birendranagar, Surkhet, Karnali, Nepal", lat: "28.6000", lon: "81.6333" },
+  { name: "Gorkha, Gandaki, Nepal", lat: "28.0000", lon: "84.6333" },
+  { name: "Bandipur, Tanahun, Gandaki, Nepal", lat: "27.9333", lon: "84.4167" },
+  { name: "Jomsom, Mustang, Gandaki, Nepal", lat: "28.7833", lon: "83.7333" },
+  { name: "Muktinath, Mustang, Gandaki, Nepal", lat: "28.8167", lon: "83.8667" },
+  { name: "Lukla, Everest Region, Koshi, Nepal", lat: "27.6881", lon: "86.7314" },
+  { name: "Namche Bazaar, Everest Region, Koshi, Nepal", lat: "27.8000", lon: "86.7167" },
+  { name: "Nagarkot, Bhaktapur, Bagmati, Nepal", lat: "27.7175", lon: "85.5200" },
+  { name: "Dhulikhel, Kavre, Bagmati, Nepal", lat: "27.6250", lon: "85.5500" },
+  { name: "Ilam, Koshi, Nepal", lat: "26.9083", lon: "87.9281" },
+  { name: "Birtamode, Jhapa, Koshi, Nepal", lat: "26.6433", lon: "87.9869" },
+  { name: "Lahan, Siraha, Madhesh, Nepal", lat: "26.7167", lon: "86.4833" },
+  { name: "Rajbiraj, Saptari, Madhesh, Nepal", lat: "26.5333", lon: "86.7500" },
+  { name: "Banepa, Kavre, Bagmati, Nepal", lat: "27.6333", lon: "85.5167" },
+  { name: "Kirtipur, Kathmandu, Bagmati, Nepal", lat: "27.6833", lon: "85.2833" },
+  { name: "Lumbini, Rupandehi, Lumbini, Nepal", lat: "27.4833", lon: "83.2833" },
+  { name: "Siddharthanagar (Bhairahawa), Lumbini, Nepal", lat: "27.5000", lon: "83.4500" },
+  { name: "Tikapur, Kailali, Sudurpashchim, Nepal", lat: "28.5000", lon: "81.1333" },
+  { name: "Damak, Jhapa, Koshi, Nepal", lat: "26.6667", lon: "87.7000" },
+  { name: "Inaruwa, Sunsari, Koshi, Nepal", lat: "26.6000", lon: "87.1500" },
+  { name: "Tulsipur, Dang, Lumbini, Nepal", lat: "28.1333", lon: "82.3000" },
+  { name: "Ghorahi, Dang, Lumbini, Nepal", lat: "28.0333", lon: "82.5000" },
+  { name: "Kalaiya, Bara, Madhesh, Nepal", lat: "27.0333", lon: "85.0000" },
+  { name: "Malangwa, Sarlahi, Madhesh, Nepal", lat: "26.8500", lon: "85.5500" },
+  { name: "Jaleshwar, Mahottari, Madhesh, Nepal", lat: "26.6500", lon: "85.8000" }
+];
 
 app.get('/api/search-locations', async (req, res) => {
   try {
-    const query = req.query.q;
+    const query = (req.query.q || '').trim().toLowerCase();
     if (!query) return res.json({ success: true, data: [] });
 
-    const nominatimUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&countrycodes=np&accept-language=en&limit=10`;
-    
-    // 👇 Change the User-Agent to a completely unique app string
-    const response = await axios.get(nominatimUrl, {
-      headers: { 
-        'User-Agent': 'NepalWeatherForecastApp-Production-v1.0 (support@nwfnp.netlify.app)' 
-      }
-    });
+    // 1. Instant match from local preset database
+    const presetMatches = NEPAL_PRESET_LOCATIONS.filter(item =>
+      item.name.toLowerCase().includes(query)
+    );
 
-    const seenNames = new Set();
-    const locations = [];
+    const locations = [...presetMatches];
+    const seenNames = new Set(presetMatches.map(m => m.name.toLowerCase()));
 
-    for (const item of response.data) {
-      if (!seenNames.has(item.display_name)) {
-        seenNames.add(item.display_name);
-        locations.push({
-          name: item.display_name,
-          lat: item.lat,
-          lon: item.lon
-        });
+    // 2. Try Nominatim as secondary source
+    try {
+      const nominatimUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&countrycodes=np&accept-language=en&limit=10`;
+      const response = await axios.get(nominatimUrl, {
+        timeout: 4000,
+        headers: {
+          'User-Agent': 'NepalWeatherForecastApp-Production-v1.0 (support@nwfnp.netlify.app)'
+        }
+      });
+
+      if (Array.isArray(response.data)) {
+        for (const item of response.data) {
+          const lowerName = item.display_name.toLowerCase();
+          if (!seenNames.has(lowerName)) {
+            seenNames.add(lowerName);
+            locations.push({
+              name: item.display_name,
+              lat: item.lat,
+              lon: item.lon
+            });
+          }
+          if (locations.length >= 6) break;
+        }
       }
-      if (locations.length >= 5) break;
+    } catch (e) {
+      console.warn("Nominatim search fallback:", e.message);
     }
 
-    res.json({ success: true, data: locations });
+    res.json({ success: true, data: locations.slice(0, 6) });
   } catch (error) {
     console.error("Search API Error:", error.message);
-    res.status(500).json({ success: false, error: error.message });
+    // Always fallback to preset matches if any error
+    const query = (req.query.q || '').trim().toLowerCase();
+    const fallbackMatches = NEPAL_PRESET_LOCATIONS.filter(item =>
+      item.name.toLowerCase().includes(query)
+    );
+    res.json({ success: true, data: fallbackMatches.slice(0, 6) });
   }
 });
 
-
-
-// Add this to your backend server file (e.g., server.js)
-
+// 9. Precipitation Insight Endpoint
 app.get('/api/precipitation-insight', async (req, res) => {
   try {
     const lat = req.query.lat || '27.701';
@@ -381,12 +415,10 @@ app.get('/api/precipitation-insight', async (req, res) => {
     
     const response = await fetch(twcUrl);
     
-    // If the API isn't ok or returns 204 No Content, return a safe empty payload instead of crashing
     if (!response.ok || response.status === 204) {
       return res.json({ success: true, data: [] });
     }
 
-    // Check if the response body is actually text/content before parsing
     const text = await response.text();
     if (!text || text.trim() === '') {
       return res.json({ success: true, data: [] });
@@ -397,8 +429,9 @@ app.get('/api/precipitation-insight', async (req, res) => {
     
   } catch (error) {
     console.error('Error fetching precipitation insight:', error.message);
-    // Return safe fallback instead of 500 error to keep frontend clean
     res.json({ success: true, data: [] });
   }
 });
 
+const PORT = 5000;
+app.listen(PORT, () => console.log(`Proxy running on http://localhost:${PORT}`));
