@@ -597,19 +597,50 @@ window.addEventListener("DOMContentLoaded", initInstantApp);
 const searchInput = document.getElementById("locationSearchInput");
 const dropdown = document.getElementById("searchResultsDropdown");
 
+// function renderSearchDropdown(list) {
+//   if (!dropdown) return;
+//   dropdown.innerHTML = "";
+//   if (list && list.length > 0) {
+//     dropdown.style.display = "block";
+//     list.forEach((item) => {
+//       const div = document.createElement("div");
+//       div.className = "search-item";
+//       div.textContent = item.name;
+//       div.addEventListener("click", () => {
+//         if (searchInput) searchInput.value = "";
+//         dropdown.style.display = "none";
+//         updateWeatherLocation(item.lat, item.lon, item.name);
+//       });
+//       dropdown.appendChild(div);
+//     });
+//   } else {
+//     dropdown.style.display = "none";
+//   }
+// }
+
+let isSelectingItem = false; // Add a lock flag
+
 function renderSearchDropdown(list) {
   if (!dropdown) return;
   dropdown.innerHTML = "";
-  if (list && list.length > 0) {
+  if (list && list.length > 0 && !isSelectingItem) {
     dropdown.style.display = "block";
     list.forEach((item) => {
       const div = document.createElement("div");
       div.className = "search-item";
       div.textContent = item.name;
       div.addEventListener("click", () => {
+        isSelectingItem = true; // Lock dropdown from reopening
+        clearTimeout(searchTimeout);
         if (searchInput) searchInput.value = "";
+        
+        dropdown.innerHTML = "";
         dropdown.style.display = "none";
+        
         updateWeatherLocation(item.lat, item.lon, item.name);
+        
+        // Unlock after a short delay so normal typing works again later
+        setTimeout(() => { isSelectingItem = false; }, 300);
       });
       dropdown.appendChild(div);
     });
@@ -617,6 +648,7 @@ function renderSearchDropdown(list) {
     dropdown.style.display = "none";
   }
 }
+
 
 let searchTimeout;
 
