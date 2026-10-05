@@ -19,10 +19,13 @@ function renderCachedCurrent(data) {
     if (locTitle) locTitle.textContent = data.cityName;
   }
 
-  const updateTimeEl = document.getElementById("updateTime");
-  if (updateTimeEl) {
-    const timeStr = new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit", hour12: true });
-    updateTimeEl.textContent = timeStr;
+  const timeStr = new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit", hour12: true });
+  const locSub = document.getElementById("locationSub");
+  if (locSub && data.region) {
+    locSub.innerHTML = `${data.region} &bull; As of <span id="updateTime">${timeStr}</span>`;
+  } else {
+    const updateTimeEl = document.getElementById("updateTime");
+    if (updateTimeEl) updateTimeEl.textContent = timeStr;
   }
 
   if (data.iconCode !== undefined) {
@@ -70,6 +73,9 @@ function renderCachedHourly(list) {
   window.latestHourlyData = list;
   container.innerHTML = "";
 
+  const now = new Date();
+  const currentHour = now.getHours();
+
   // 1. Current Weather "Now" Card
   const curTempEl = document.getElementById("currentTemp");
   const nowTemp = (curTempEl && curTempEl.textContent && curTempEl.textContent !== "--")
@@ -79,7 +85,7 @@ function renderCachedHourly(list) {
   const curIconEl = document.getElementById("currentWeatherIcon");
   const mainIconSrc = (curIconEl && curIconEl.src && curIconEl.src.indexOf('icons/') !== -1)
     ? curIconEl.src
-    : (window.currentWeatherIconUrl || getWeatherIconPath(list[0].iconCode ?? 44));
+    : (window.currentWeatherIconUrl || getWeatherIconPath(list[0].iconCode ?? 44, currentHour));
 
   const firstPrecip = list[0].precipChance ?? list[0].pop ?? 0;
   const pVal = Math.round(parseInt(String(firstPrecip).replace(/[^0-9]/g, ""), 10) || 0);
@@ -95,9 +101,9 @@ function renderCachedHourly(list) {
   `;
   container.appendChild(nowCard);
 
-  // 2. Subsequent Hourly Cards (e.g. 3 PM, 4 PM, 5 PM...)
-  const nowMs = Date.now();
-  const thirtyMinsMs = 30 * 60 * 1000;
+  // 2. Subsequent Hourly Cards for Upcoming Hours (4 PM, 5 PM, 6 PM...)
+  const thirtyMinsAgoMs = now.getTime() - (30 * 60 * 1000);
+  const renderedHours = new Set([currentHour]); // Mark current hour as already represented by "Now"
 
   list.forEach((item, idx) => {
     if (!item) return;
@@ -108,25 +114,32 @@ function renderCachedHourly(list) {
       if (!isNaN(d.getTime())) itemDate = d;
     }
 
-    // Skip past hours (older than 30 mins ago)
-    if (itemDate && itemDate.getTime() < (nowMs - thirtyMinsMs)) {
-      return;
-    }
+    // Skip past hours
+    if (itemDate && itemDate.getTime() < thirtyMinsAgoMs) return;
 
+    let targetHour = null;
     let timeStr = "";
+
     if (itemDate) {
+      targetHour = itemDate.getHours();
+      // Skip if this hour matches current hour (already shown as "Now")
+      if (renderedHours.has(targetHour)) return;
+      renderedHours.add(targetHour);
       timeStr = itemDate.toLocaleTimeString([], { hour: "numeric", hour12: true });
     } else {
       const fallbackDate = new Date();
       fallbackDate.setMinutes(0, 0, 0);
       fallbackDate.setHours(fallbackDate.getHours() + idx + 1);
+      targetHour = fallbackDate.getHours();
+      if (renderedHours.has(targetHour)) return;
+      renderedHours.add(targetHour);
       timeStr = fallbackDate.toLocaleTimeString([], { hour: "numeric", hour12: true });
     }
 
     const temp = item.temperature ?? item.temp ?? "--";
     const pop = Math.round(parseInt(String(item.precipChance ?? item.pop ?? 0).replace(/[^0-9]/g, ""), 10) || 0);
     const popHtml = pop > 0 ? `<div class="precip-badge"><span class="drop-icon">💧</span>${pop}%</div>` : "";
-    const cardIcon = getWeatherIconPath(item.iconCode ?? item.wxIcon);
+    const cardIcon = getWeatherIconPath(item.iconCode ?? item.wxIcon, targetHour);
 
     const card = document.createElement("div");
     card.className = "hourly-card";
@@ -147,7 +160,7 @@ function renderCachedDaily(list) {
   container.innerHTML = "";
 
   list.forEach((item) => {
-    const iconPath = getWeatherIconPath(item.iconCode);
+    const iconPath = getWeatherIconPath(item.iconCode, 12); // Daytime forecast for daily cards
     let pop = item.precipChance || 0;
     const badgeHtml = pop > 0 ? `<div class="precip-badge"><span class="drop-icon">💧</span>${pop}%</div>` : "";
 
@@ -366,13 +379,13 @@ async function loadRainChart(lat, lon) {
   }
 }
 
-function getWeatherIconPath(code) {
+function getWeatherIconPath(code, targetHour) {
   if (code === undefined || code === null) code = 44;
 
-  const nowHour = new Date().getHours();
-  const isDaytime = (nowHour >= 6 && nowHour < 18);
+  const h = (targetHour !== undefined && targetHour !== null) ? Number(targetHour) : new Date().getHours();
+  const isDaytime = (h >= 6 && h < 18);
 
-  // Automatic day/night icon code adjustment matching current local time
+  // Automatic day/night icon code adjustment for the specific target hour
   let adjustedCode = Number(code);
   if (isDaytime) {
     if (adjustedCode === 27) adjustedCode = 28;      // Mostly Cloudy Night -> Day
