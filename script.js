@@ -67,27 +67,21 @@ function renderCachedHourly(list) {
   if (!Array.isArray(list) || list.length === 0) return;
   const container = document.getElementById("hourlyForecast");
   if (!container) return;
-
-  const nowMs = Date.now();
-  const oneHourMs = 3600000;
-
-  // Filter out expired items from past hours if item has valid ISO timestamp
-  const validItems = list.filter(item => {
-    if (!item.time) return true;
-    const itemDate = new Date(item.time);
-    if (isNaN(itemDate.getTime())) return true;
-    return itemDate.getTime() >= (nowMs - oneHourMs);
-  });
-
-  const displayList = validItems.length > 0 ? validItems : list;
-  window.latestHourlyData = displayList;
+  window.latestHourlyData = list;
   container.innerHTML = "";
 
-  const curIcon = document.getElementById("currentWeatherIcon");
-  const mainIconSrc = (curIcon && curIcon.src && curIcon.src.indexOf('icons/') !== -1) ? curIcon.src : (window.currentWeatherIconUrl || getWeatherIconPath(displayList[0].iconCode ?? 44));
+  // 1. Current Weather "Now" Card
+  const curTempEl = document.getElementById("currentTemp");
+  const nowTemp = (curTempEl && curTempEl.textContent && curTempEl.textContent !== "--")
+    ? curTempEl.textContent
+    : (list[0].temperature ?? list[0].temp ?? "--");
 
-  const firstTemp = displayList[0].temperature ?? displayList[0].temp ?? "--";
-  const firstPrecip = displayList[0].precipChance ?? displayList[0].pop ?? 0;
+  const curIconEl = document.getElementById("currentWeatherIcon");
+  const mainIconSrc = (curIconEl && curIconEl.src && curIconEl.src.indexOf('icons/') !== -1)
+    ? curIconEl.src
+    : (window.currentWeatherIconUrl || getWeatherIconPath(list[0].iconCode ?? 44));
+
+  const firstPrecip = list[0].precipChance ?? list[0].pop ?? 0;
   const pVal = Math.round(parseInt(String(firstPrecip).replace(/[^0-9]/g, ""), 10) || 0);
   const badgeHtml = pVal > 0 ? `<div class="precip-badge"><span class="drop-icon">💧</span>${pVal}%</div>` : "";
 
@@ -96,33 +90,42 @@ function renderCachedHourly(list) {
   nowCard.innerHTML = `
     <p class="time"><strong>Now</strong></p>
     <img id="nowHourlyIcon" src="${mainIconSrc}" alt="Weather Icon" class="forecast-icon" width="40" height="40">
-    <p class="temp">${firstTemp}°C</p>
+    <p class="temp">${nowTemp}°C</p>
     ${badgeHtml}
   `;
   container.appendChild(nowCard);
 
-  const fallbackTime = new Date();
-  fallbackTime.setMinutes(0, 0, 0);
-  fallbackTime.setHours(fallbackTime.getHours() + 1);
+  // 2. Subsequent Hourly Cards (e.g. 3 PM, 4 PM, 5 PM...)
+  const nowMs = Date.now();
+  const thirtyMinsMs = 30 * 60 * 1000;
 
-  displayList.forEach((item, idx) => {
-    if (idx === 0) return;
+  list.forEach((item, idx) => {
+    if (!item) return;
+
+    let itemDate = null;
+    if (item.time) {
+      const d = new Date(item.time);
+      if (!isNaN(d.getTime())) itemDate = d;
+    }
+
+    // Skip past hours (older than 30 mins ago)
+    if (itemDate && itemDate.getTime() < (nowMs - thirtyMinsMs)) {
+      return;
+    }
+
+    let timeStr = "";
+    if (itemDate) {
+      timeStr = itemDate.toLocaleTimeString([], { hour: "numeric", hour12: true });
+    } else {
+      const fallbackDate = new Date();
+      fallbackDate.setMinutes(0, 0, 0);
+      fallbackDate.setHours(fallbackDate.getHours() + idx + 1);
+      timeStr = fallbackDate.toLocaleTimeString([], { hour: "numeric", hour12: true });
+    }
+
     const temp = item.temperature ?? item.temp ?? "--";
     const pop = Math.round(parseInt(String(item.precipChance ?? item.pop ?? 0).replace(/[^0-9]/g, ""), 10) || 0);
     const popHtml = pop > 0 ? `<div class="precip-badge"><span class="drop-icon">💧</span>${pop}%</div>` : "";
-
-    let timeStr = "";
-    if (item.time) {
-      const itemDate = new Date(item.time);
-      if (!isNaN(itemDate.getTime())) {
-        timeStr = itemDate.toLocaleTimeString([], { hour: "numeric", hour12: true });
-      }
-    }
-    if (!timeStr) {
-      const cardTime = new Date(fallbackTime.getTime() + (idx - 1) * 3600000);
-      timeStr = cardTime.toLocaleTimeString([], { hour: "numeric", hour12: true });
-    }
-
     const cardIcon = getWeatherIconPath(item.iconCode ?? item.wxIcon);
 
     const card = document.createElement("div");
